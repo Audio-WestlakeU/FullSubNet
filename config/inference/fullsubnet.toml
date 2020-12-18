@@ -1,0 +1,1 @@
+inherit = "config/common/fullsubnet_inference.toml"
