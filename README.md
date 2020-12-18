@@ -7,6 +7,8 @@ ICASSP 2021. [:construction: Under Construction]
 
 <img src="docs/workflow.png" width="400px" alt="workflow"/>
 
+![fullsubnet_result](docs/fullsubnet-result.png)
+
 You can use all of these things:
 
 - Available models
@@ -21,7 +23,7 @@ You can use all of these things:
 
 - [Prerequisites](docs/prerequisites.md)
 - Getting Started
-    - [FullSubNet Train & Test](docs/fullsubnet.md)
+    - [FullSubNet](docs/fullsubnet.md)
 
 ## Citation
 
