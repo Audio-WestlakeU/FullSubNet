@@ -22,7 +22,7 @@ python train.py -C config/train/fullsubnet_baseline.toml
 
 ### Inference
 
-When you finish training, you can enhance the noisy speech, e.g.:
+When you finish the training, you can enhance the noisy speech, e.g.:
 
 ```shell
 python inference.py \
