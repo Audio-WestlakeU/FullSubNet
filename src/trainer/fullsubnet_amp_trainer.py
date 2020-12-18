@@ -12,6 +12,8 @@ plt.switch_backend('agg')
 class Trainer(BaseTrainer):
     def __init__(
             self,
+            dist,
+            rank,
             config,
             resume: bool,
             model,
@@ -20,7 +22,7 @@ class Trainer(BaseTrainer):
             train_dataloader,
             validation_dataloader
     ):
-        super(Trainer, self).__init__(config, resume, model, loss_function, optimizer)
+        super(Trainer, self).__init__(dist, rank, config, resume, model, loss_function, optimizer)
         self.train_dataloader = train_dataloader
         self.valid_dataloader = validation_dataloader
 
@@ -30,8 +32,8 @@ class Trainer(BaseTrainer):
         for noisy, clean in tqdm(self.train_dataloader, desc="Training"):
             self.optimizer.zero_grad()
 
-            noisy = noisy.to(self.device)
-            clean = clean.to(self.device)
+            noisy = noisy.to(self.rank)
+            clean = clean.to(self.rank)
             noisy_complex = self.torch_stft(noisy)
             clean_complex = self.torch_stft(clean)
 
@@ -78,8 +80,8 @@ class Trainer(BaseTrainer):
             name = name[0]
             speech_type = speech_type[0]
 
-            noisy = noisy.to(self.device)
-            clean = clean.to(self.device)
+            noisy = noisy.to(self.rank)
+            clean = clean.to(self.rank)
 
             noisy_complex = self.torch_stft(noisy)
             clean_complex = self.torch_stft(clean)

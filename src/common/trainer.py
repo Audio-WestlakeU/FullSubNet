@@ -15,26 +15,21 @@ from torch.cuda.amp import GradScaler
 import util.metrics as metrics
 from util import visualization
 from util.acoustic_utils import stft, istft, transform_pesq_range
-from util.utils import prepare_empty_dir, ExecutionTime, prepare_device
+from util.utils import prepare_empty_dir, ExecutionTime
 
 plt.switch_backend('agg')
 
 
 class BaseTrainer:
-    def __init__(self, config, resume: bool, model, loss_function, optimizer):
+    def __init__(self, dist, rank, config, resume: bool, model, loss_function, optimizer):
         self.color_tool = colorful
         self.color_tool.use_style("solarized")
 
-        self.n_gpu = torch.cuda.device_count()
-        self.device = prepare_device(self.n_gpu, keep_reproducibility=config["meta"]["keep_reproducibility"])
-
+        self.rank = rank
+        self.dist = dist
         self.optimizer = optimizer
         self.loss_function = loss_function
-
-        self.model = model.to(self.device)
-
-        if self.n_gpu > 1:
-            self.model = torch.nn.DataParallel(self.model, device_ids=list(range(self.n_gpu)))
+        self.model = model
 
         # Automatic mixed precision
         self.use_amp = config["meta"]["use_amp"]
@@ -47,8 +42,8 @@ class BaseTrainer:
         n_fft = self.acoustic_config["n_fft"]
         hop_length = self.acoustic_config["hop_length"]
         win_length = self.acoustic_config["win_length"]
-        self.torch_stft = partial(stft, n_fft=n_fft, hop_length=hop_length, win_length=win_length, device=self.device)
-        self.istft = partial(istft, n_fft=n_fft, hop_length=hop_length, win_length=win_length, device=self.device)
+        self.torch_stft = partial(stft, n_fft=n_fft, hop_length=hop_length, win_length=win_length, device=self.rank)
+        self.istft = partial(istft, n_fft=n_fft, hop_length=hop_length, win_length=win_length, device=self.rank)
         self.librosa_stft = partial(librosa.stft, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
         self.librosa_istft = partial(librosa.istft, hop_length=hop_length, win_length=win_length)
 
@@ -63,8 +58,6 @@ class BaseTrainer:
         self.validation_interval = self.validation_config["validation_interval"]
         self.save_max_metric_score = self.validation_config["save_max_metric_score"]
         assert self.validation_interval >= 1
-        # self.validation_custom_config = self.validation_config["custom"]
-        # self.train_custom_config = self.train_config.get("custom", {})
 
         # Trainer.visualization
         self.visualization_config = config["trainer"]["visualization"]
@@ -75,14 +68,6 @@ class BaseTrainer:
         self.save_dir = Path(config["meta"]["save_dir"]).expanduser().absolute() / config["meta"]["experiment_name"]
         self.checkpoints_dir = self.save_dir / "checkpoints"
         self.logs_dir = self.save_dir / "logs"
-        prepare_empty_dir([self.checkpoints_dir, self.logs_dir], resume=resume)
-
-        self.writer = visualization.writer(self.logs_dir.as_posix())
-        self.writer.add_text(
-            tag="Configuration",
-            text_string=f"<pre>  \n{toml.dumps(config)}  \n</pre>",
-            global_step=1
-        )
 
         if resume:
             self._resume_checkpoint()
@@ -90,15 +75,25 @@ class BaseTrainer:
         if config["meta"]["preloaded_model_path"]:
             self._preload_model(Path(config["preloaded_model_path"]))
 
-        print(self.color_tool.cyan("Configurations are as follows: "))
-        print(self.color_tool.cyan("=" * 40))
-        print(self.color_tool.cyan(toml.dumps(config)[:-1]))  # except "\n"
-        print(self.color_tool.cyan("=" * 40))
+        if self.rank == 0:
+            prepare_empty_dir([self.checkpoints_dir, self.logs_dir], resume=resume)
+            self.writer = visualization.writer(self.logs_dir.as_posix())
+            self.writer.add_text(
+                tag="Configuration",
+                text_string=f"<pre>  \n{toml.dumps(config)}  \n</pre>",
+                global_step=1
+            )
 
-        with open((self.save_dir / f"{time.strftime('%Y-%m-%d %H:%M:%S')}.toml").as_posix(), "w") as handle:
-            toml.dump(config, handle)
 
-        self._print_networks([self.model])
+            print(self.color_tool.cyan("Configurations are as follows: "))
+            print(self.color_tool.cyan("=" * 40))
+            print(self.color_tool.cyan(toml.dumps(config)[:-1]))  # except "\n"
+            print(self.color_tool.cyan("=" * 40))
+
+            with open((self.save_dir / f"{time.strftime('%Y-%m-%d %H:%M:%S')}.toml").as_posix(), "w") as handle:
+                toml.dump(config, handle)
+
+            self._print_networks([self.model])
 
     def _preload_model(self, model_path):
         """
@@ -109,14 +104,11 @@ class BaseTrainer:
         """
         model_path = model_path.expanduser().absolute()
         assert model_path.exists(), f"Preloaded *.tar file is not exist. please check path: {model_path.as_posix()}"
-        model_checkpoint = torch.load(model_path.as_posix(), map_location=self.device)
-
-        if isinstance(self.model, torch.nn.DataParallel):
-            self.model.module.load_state_dict(model_checkpoint["model"], strict=False)  # Make sure "strict=False"
-        else:
-            self.model.load_state_dict(model_checkpoint["model"], strict=False)
-
-        print(f"Model preloaded successfully from {model_path.as_posix()}.")
+        map_location = {'cuda:%d' % 0: 'cuda:%d' % self.rank}
+        model_checkpoint = torch.load(model_path.as_posix(), map_location=map_location)
+        self.model.load_state_dict(model_checkpoint["model"], strict=False)
+        if self.rank == 0:
+            print(f"Model preloaded successfully from {model_path.as_posix()}.")
 
     def _resume_checkpoint(self):
         """
@@ -128,18 +120,19 @@ class BaseTrainer:
         latest_model_path = self.checkpoints_dir.expanduser().absolute() / "latest_model.tar"
         assert latest_model_path.exists(), f"{latest_model_path} does not exist, can not load latest checkpoint."
 
-        checkpoint = torch.load(latest_model_path.as_posix(), map_location=self.device)
+        self.dist.barrier()
+
+        map_location = {'cuda:%d' % 0: 'cuda:%d' % self.rank}
+        checkpoint = torch.load(latest_model_path.as_posix(), map_location=map_location)
 
         self.start_epoch = checkpoint["epoch"] + 1
         self.best_score = checkpoint["best_score"]
         self.optimizer.load_state_dict(checkpoint["optimizer"])
 
-        if isinstance(self.model, torch.nn.DataParallel):
-            self.model.module.load_state_dict(checkpoint["model"])
-        else:
-            self.model.load_state_dict(checkpoint["model"])
+        self.model.load_state_dict(checkpoint["model"])
 
-        print(f"Model checkpoint loaded. Training will begin at {self.start_epoch} epoch.")
+        if self.rank == 0:
+            print(f"Model checkpoint loaded. Training will begin at {self.start_epoch} epoch.")
 
     def _save_checkpoint(self, epoch, is_best_epoch=False):
         """
@@ -155,17 +148,8 @@ class BaseTrainer:
         """
         print(f"\t Saving {epoch} epoch model checkpoint...")
 
-        # Build checkpoint tar package
-        state_dict = {
-            "epoch": epoch,
-            "best_score": self.best_score,
-            "optimizer": self.optimizer.state_dict()
-        }
-
-        if isinstance(self.model, torch.nn.DataParallel):
-            state_dict["model"] = self.model.module.cpu().state_dict()
-        else:
-            state_dict["model"] = self.model.cpu().state_dict()
+        state_dict = {"epoch": epoch, "best_score": self.best_score, "optimizer": self.optimizer.state_dict(),
+                      "model": self.model.state_dict()}
 
         # latest_model.tar
         # Contains all checkpoint information, including optimizer parameters, model parameters, etc.
@@ -184,8 +168,6 @@ class BaseTrainer:
             print(self.color_tool.red(f"\t Found best score in {epoch} epoch, saving..."))
             torch.save(state_dict, (self.checkpoints_dir / "best_model.tar").as_posix())
 
-        # Use model.cpu() or model.to("cpu") will migrate the model to CPU. Therefore, we need re-migrate model back.
-        self.model.to(self.device)
 
     def _is_best_epoch(self, score, save_max_metric_score=True):
         """
@@ -301,17 +283,18 @@ class BaseTrainer:
 
     def train(self):
         for epoch in range(self.start_epoch, self.epochs + 1):
-            print(self.color_tool.yellow(f"{'=' * 15} {epoch} epoch {'=' * 15}"))
-            print("[0 seconds] Begin training...")
-            timer = ExecutionTime()
+            if self.rank == 0:
+                print(self.color_tool.yellow(f"{'=' * 15} {epoch} epoch {'=' * 15}"))
+                print("[0 seconds] Begin training...")
 
+            timer = ExecutionTime()
             self._set_models_to_train_mode()
             self._train_epoch(epoch)
 
-            if self.save_checkpoint_interval != 0 and (epoch % self.save_checkpoint_interval == 0):
+            if self.save_checkpoint_interval != 0 and (epoch % self.save_checkpoint_interval == 0) and self.rank == 0:
                 self._save_checkpoint(epoch)
 
-            if epoch % self.validation_interval == 0:
+            if epoch % self.validation_interval == 0 and self.rank == 0:
                 print(f"[{timer.duration()} seconds] Training has finished, validation is in progress...")
 
                 self._set_models_to_eval_mode()
@@ -320,7 +303,8 @@ class BaseTrainer:
                 if self._is_best_epoch(metric_score, save_max_metric_score=self.save_max_metric_score):
                     self._save_checkpoint(epoch, is_best_epoch=True)
 
-            print(f"[{timer.duration()} seconds] This epoch has finished.")
+            if self.rank == 0:
+                print(f"[{timer.duration()} seconds] This epoch has finished.")
 
     def _train_epoch(self, epoch):
         raise NotImplementedError
