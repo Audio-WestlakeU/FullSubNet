@@ -1,4 +1,4 @@
-# FullSubNet Train & Test
+# FullSubNet
 
 ## Dataset
 
@@ -9,6 +9,8 @@ per clip). You can download this dataset in [https://github.com/microsoft/DNS-Ch
 
 This Git repository contains the DNS Challenge dataset (INTERSPEECH 2020) and the newer DNS Challenge dataset (ICASSP 2021). The default branch of the
 Git repository is the ICASSP 2021 Dataset. You need to check out the default branch to INTERSPEECH 2020 branch.
+
+## Usage
 
 ### Training
 
