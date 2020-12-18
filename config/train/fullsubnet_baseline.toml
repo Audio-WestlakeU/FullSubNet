@@ -12,8 +12,8 @@ use_offline_norm = true
 num_sub_batches = 2
 
 [train_dataset.dataloader]
-batch_size = 20
-num_workers = 20
+batch_size = 40
+num_workers = 6
 
 [trainer]
 path = "trainer.fullsubnet_amp_trainer.Trainer"
@@ -23,5 +23,5 @@ save_checkpoint_interval = 5
 validation_interval = 5
 [trainer.visualization]
 n_samples = 20
-num_workers = 20
+num_workers = 6
 metrics = ["WB_PESQ", "NB_PESQ", "STOI", "SI_SDR"]

@@ -73,7 +73,6 @@ class Model(BaseModel):
     def forward(self, input):
         """
         Args:
-            device:
             input: [B, 1, F, T]
 
         Returns:
