@@ -17,7 +17,11 @@ Git repository is the ICASSP 2021 Dataset. You need to check out the default bra
 You can use the default training configuration:
 
 ```shell
-python train.py -C config/train/fullsubnet_baseline.toml
+# Use two GPUs
+CUDA_VISABLE_DEVICES=0,1 python train.py -C config/train/fullsubnet_baseline.toml -W 2
+
+# Resume the experiment
+CUDA_VISABLE_DEVICES=0,1 python train.py -C config/train/fullsubnet_baseline.toml -W 2 -R
 ```
 
 ### Inference

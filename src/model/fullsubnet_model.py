@@ -1,5 +1,4 @@
 import torch
-from torch.cuda.amp import autocast
 from torch.nn import functional
 
 from common.model import BaseModel
@@ -9,14 +8,23 @@ from util.acoustic_utils import drop_sub_band
 
 class Model(BaseModel):
     def __init__(self,
-                 n_freqs, n_neighbor, look_ahead,
-                 sequence_model, fband_output_activate_function, sband_output_activate_function,
-                 fband_model_hidden_size, sband_model_hidden_size, weight_init=True,
+                 n_freqs,
+                 n_neighbor,
+                 look_ahead,
+                 sequence_model,
+                 fband_output_activate_function,
+                 sband_output_activate_function,
+                 fband_model_hidden_size,
+                 sband_model_hidden_size,
+                 weight_init=True,
                  num_sub_batches=3,
-                 use_offline_norm=True, use_cumulative_norm=False, use_forgetting_norm=False, use_hybrid_norm=False,
+                 use_offline_norm=True,
+                 use_cumulative_norm=False,
+                 use_forgetting_norm=False,
+                 use_hybrid_norm=False,
                  ):
         """
-        FullSubNet: A Full-Band and Sub-Band Fusion for Real-time Single-Channel Speech Enhancement
+        FullSubNet model
 
         Input: [B, 1, F, T]
         Output: [B, 2, F, T]
@@ -26,10 +34,6 @@ class Model(BaseModel):
             n_neighbor: Number of the neighbor frequencies in each side
             look_ahead: Number of use of the future frames
             sequence_model: Chose one sequence model as the basic model (GRU, LSTM)
-            fband_output_activate_function:
-            sband_output_activate_function:
-            fband_model_hidden_size:
-            sband_model_hidden_size:
         """
         super().__init__()
         assert sequence_model in ("GRU", "LSTM"), f"{self.__class__.__name__} only support GRU and LSTM."
@@ -66,17 +70,15 @@ class Model(BaseModel):
             "Only Supports one Norm method."
 
         if weight_init:
-            print("Initializing Model...")
             self.apply(self.weight_init)
 
-    @autocast()
     def forward(self, input):
         """
         Args:
             input: [B, 1, F, T]
 
         Returns:
-            model_ipt: [B, 2, F, T]
+            [B, 2, F, T]
         """
         assert input.dim() == 4
         # Pad look ahead
@@ -84,7 +86,7 @@ class Model(BaseModel):
         batch_size, n_channels, n_freqs, n_frames = input.size()
         assert n_channels == 1, f"{self.__class__.__name__} takes mag feature as inputs."
 
-        """=== === === Full-Band LSTM Model === === ==="""
+        """=== === === Full-Band sub Model === === ==="""
         if self.use_offline_norm:
             fband_mu = torch.mean(input, dim=(1, 2, 3)).reshape(batch_size, 1, 1, 1)  # 语谱图算一个均值
             fband_input = input / (fband_mu + 1e-10)
@@ -105,7 +107,7 @@ class Model(BaseModel):
         fband_output = self.fband_model(fband_input)
         fband_output = fband_output.reshape(batch_size, n_channels, n_freqs, n_frames)
 
-        """=== === === Sub-Band Model === === ==="""
+        """=== === === Sub-Band sub Model === === ==="""
         # [B, 1, F, T] => unfold => [B, N=F, C, F_s, T] => [B * N, F_s, T]
         input_unfolded = self.unfold(input, n_neighbor=self.n_neighbor)
         fband_output_unfolded = self.unfold(fband_output, n_neighbor=1)
@@ -129,7 +131,8 @@ class Model(BaseModel):
             raise NotImplementedError("You must set up a type of Norm. "
                                       "e.g. offline_norm, cumulative_norm, forgetting_norm.")
 
-        # Reduce computational complexity
+        # Speed up training without significant performance degradation
+        # This part of the content will be updated in the paper later
         if batch_size > 1:
             sband_input = sband_input.reshape(batch_size, n_freqs, self.n_neighbor * 2 + 1 + 2 + 1, n_frames)
             sband_input = drop_sub_band(sband_input.permute(0, 2, 1, 3), num_sub_batches=self.num_sub_batches)

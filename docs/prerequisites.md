@@ -2,11 +2,11 @@
 
 - Linux or macOS
 - Anaconda or Miniconda
-- CPU or NVIDIA GPU + CUDA CuDNN
+- NVIDIA GPU + CUDA CuDNN (CPU is **not** supported)
 
 ## Clone
 
-Clone this repository:
+Clone the repository:
 
 ```shell
 git clone https://github.com/haoxiangsnr/FullSubNet
