@@ -48,7 +48,7 @@ dataset_dir_list = ["~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synt
 sr = 16000
 
 [model]
-path = "model.fullsubnet_model_use_amp.Model"
+path = "model.fullsubnet_model.Model"
 [model.args]
 n_freqs = 257
 n_neighbor = 15
@@ -78,7 +78,7 @@ beta2 = 0.999
 [trainer]
 path = "trainer.fullsubnet_trainer.Trainer"
 [trainer.train]
-epochs = 1200
+epochs = 9999
 save_checkpoint_interval = 10
 clip_grad_norm_value = 5
 [trainer.validation]

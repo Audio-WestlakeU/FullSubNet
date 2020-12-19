@@ -1,60 +1,11 @@
 import os
 
 import librosa
-import librosa.util as librosa_util
 import numpy as np
 import torch
-from scipy.signal import get_window
-
-
-def reduce_computational_complexity(input, step_size, dim=1):
-    """
-    舍弃 tensor 中的某些频率，降低子带模型的计算复杂度
-
-    Args:
-        dim:
-        input: [B, N, F, T] where N is number of sub bands and F is number of frequency of each sub band.
-        step_size (int): TODO desc
-
-    Notes
-
-        e.g., [64, 1, 256, 33, 200], step_size = 4
-            sub_batch_1: (16, 1, 64, 33, 200), 其中 64 个频率对应的索引为 (0, 4, 8, 12, ...)
-            sub_batch_2: (16, 1, 64, 33 ,200), 其中 64 个频率对应的索引为 (1, 5, 9, 13)
-            sub_batch_3: (16, 1, 64, 33 ,200)
-            sub_batch_3: (16, 1, 64, 33 ,200)
-
-            input[5, 0, 4, 10, 10] == output[5, 0, 1, 10, 10]
-            input[16, 0, 1, 10, 10] == output[16, 0, 0, 10, 10]
-            input[32, 0, 2, 10, 10] == output[32, 0, 0, 10, 10]
-
-        TODO Batch size 如果不能被 step_size 整除，余数会被舍去，那全频带的结果就没有意义了。所以 batch size 必须为 2 的幂次，
-        TODO 后续余下的 batch 可以优化为随机选择频率，这样又有随机性，又充分利用了所有 batch
-
-        The first dim must be batch size
-
-    Returns:
-        [B, N // step, F, T]
-    """
-    batch_size = input.shape[0]
-    assert (step_size & step_size - 1) == 0, "Step_size must be the integer power of two."
-    assert (batch_size & batch_size - 1) == 0, "Batch_size must be the integer power of two."
-    assert 2 <= step_size <= batch_size, f"step_size: {step_size}, batch_size: {batch_size}"
-
-    indices = torch.arange(input.shape[dim], device=input.device).reshape(-1, step_size).permute(1, 0)  # e.g., [4, 64]
-    input = input.reshape(step_size, batch_size // step_size, *input.shape[1:])
-
-    final_selected = []
-    for idx, sub_batch_input in zip(indices, input):
-        final_selected.append(torch.index_select(sub_batch_input, dim=dim, index=idx))
-
-    return torch.cat(final_selected, dim=0)
 
 
 def get_complex_ideal_ratio_mask(noisy_complex_tensor, clean_complex_tensor):
-    """
-        [B, F, T, 2]
-    """
     noisy_real = noisy_complex_tensor[..., 0]
     noisy_imag = noisy_complex_tensor[..., 1]
     clean_real = clean_complex_tensor[..., 0]
@@ -80,49 +31,6 @@ def compression_using_hyperbolic_tangent(mask, K=10, C=0.1):
         mask = -100 * (mask <= -100) + mask * (mask > -100)
         mask = K * (1 - np.exp(-C * mask)) / (1 + np.exp(-C * mask))
     return mask
-
-
-def window_sumsquare(window, n_frames, hop_length=200, win_length=800, n_fft=800, dtype=np.float32, norm=None):
-    """
-    # from librosa 0.6
-    Compute the sum-square envelope of a window function at a given hop length.
-    This is used to estimate modulation effects induced by windowing
-    observations in short-time fourier transforms.
-    Parameters
-    ----------
-    window : string, tuple, number, callable, or list-like
-        Window specification, as in `get_window`
-    n_frames : int > 0
-        The number of analysis frames
-    hop_length : int > 0
-        The number of samples to advance between frames
-    win_length : [optional]
-        The length of the window function.  By default, this matches `n_fft`.
-    n_fft : int > 0
-        The length of each analysis frame.
-    dtype : np.dtype
-        The data type of the output
-    Returns
-    -------
-    wss : np.ndarray, shape=`(n_fft + hop_length * (n_frames - 1))`
-        The sum-squared envelope of the window function
-    """
-    if win_length is None:
-        win_length = n_fft
-
-    n = n_fft + hop_length * (n_frames - 1)
-    x = np.zeros(n, dtype=dtype)
-
-    # Compute the squared window at the desired length
-    win_sq = get_window(window, win_length, fftbins=True)
-    win_sq = librosa_util.normalize(win_sq, norm=norm) ** 2
-    win_sq = librosa_util.pad_center(win_sq, n_fft)
-
-    # Fill the envelope
-    for i in range(n_frames):
-        sample = i * hop_length
-        x[sample:min(n, sample + n_fft)] += win_sq[:max(0, min(n_fft, n - sample))]
-    return x
 
 
 def transform_pesq_range(pesq_score):
@@ -189,9 +97,10 @@ def load_wav(file, sr=16000):
 
 def aligned_subsample(data_a, data_b, sub_sample_length):
     """
-    从某个随机位置开始，从两个语音样本中取出固定长度的片段
+    Start from a random position and take a fixed-length segment from two speech samples
 
-    支持一维语音信号与二维语谱图信号（F, T）
+    Notes
+        Only support one-dimensional speech signal (T,) and two-dimensional spectrogram signal (F, T)
     """
     assert data_a.shape == data_b.shape, "Inconsistent dataset size."
 
@@ -217,10 +126,8 @@ def aligned_subsample(data_a, data_b, sub_sample_length):
             )
         else:
             return (
-                np.append(data_a, np.zeros(shape=(data_a.shape[0], sub_sample_length - length), dtype=np.float32),
-                          axis=-1),
-                np.append(data_b, np.zeros(shape=(data_a.shape[0], sub_sample_length - length), dtype=np.float32),
-                          axis=-1)
+                np.append(data_a, np.zeros(shape=(data_a.shape[0], sub_sample_length - length), dtype=np.float32), axis=-1),
+                np.append(data_b, np.zeros(shape=(data_a.shape[0], sub_sample_length - length), dtype=np.float32), axis=-1)
             )
 
 
@@ -321,16 +228,15 @@ def activity_detector(audio, fs=16000, activity_threshold=0.13, target_level=-25
 
 def drop_sub_band(input, num_sub_batches=3):
     """
-    To reduce the computational complexity of the sub_band model in fullsubnet model.
-    TODO
+    To reduce the computational complexity of the sub_band sub model in the FullSubNet model.
 
     Args:
         input: [B, C, F, T]
         num_sub_batches:
 
     Notes:
-        'batch_size' of input should be divisible by 'num_sub_batch'.
-        If not, the frequencies corresponding to the last sub batch will not be trained well.
+        'batch_size' of the input should be divisible by the value of 'num_sub_batch'.
+        If not, the frequencies corresponding to the last sub batch will not be well-trained.
 
     Returns:
         [B, C, F // num_sub_batches, T]

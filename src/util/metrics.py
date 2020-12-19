@@ -53,37 +53,6 @@ def _scale_bss_eval(references, estimate, idx, compute_sir_sar=True):
     return si_sdr, si_sir, si_sar, sd_sdr, snr, srr
 
 
-def SI_SDR_Merl(reference, estimation, sr=16000):
-    eps = np.finfo(reference.dtype).eps
-
-    Rss = np.dot(reference.T, reference)
-
-    # get the scaling factor for clean sources
-    a = (eps + np.dot(reference.T, estimation)) / (Rss + eps)
-
-    e_true = a * reference
-    e_res = estimation - e_true
-
-    Sss = (e_true ** 2).sum()
-    Snn = (e_res ** 2).sum()
-
-    return 10 * np.log10((eps + Sss) / (eps + Snn))
-
-
-def SI_SDR_Custom(reference, estimation, sr=16000):
-    alpha = (
-            reference @ estimation / ((reference ** 2).sum() + 1e-8)
-    )
-
-    e_target = alpha * reference
-    e_res = e_target - estimation
-
-    signal = (e_target ** 2).sum()
-    noise = (e_res ** 2).sum()
-
-    return 10 * np.log10(signal) - 10 * np.log10(noise)
-
-
 def SDR(reference, estimation, sr=16000):
     sdr, _, _, _ = bss_eval_sources(reference[None, :], estimation[None, :])
     return sdr

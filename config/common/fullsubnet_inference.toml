@@ -19,7 +19,7 @@ offset = 0
 sr = 16000
 
 [model]
-path = "model.fullsubnet_model_amp.Model"
+path = "model.fullsubnet_model.Model"
 [model.args]
 n_freqs = 257
 n_neighbor = 15

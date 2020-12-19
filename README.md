@@ -1,11 +1,11 @@
 # FullSubNet
 
 This Git repository for our paper "FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement" submitted to
-ICASSP 2021. [:construction: Under Construction]
+ICASSP 2021. [[Paper]](https://arxiv.org/abs/2010.15508)
 
-[[Paper]](https://arxiv.org/abs/2010.15508)
-
-<img src="docs/workflow.png" width="400px" alt="workflow"/>
+<p align="center">
+  <img width="460" src="docs/workflow.png" alt="workflow">
+</p>
 
 ![fullsubnet_result](docs/fullsubnet-result.png)
 
@@ -42,10 +42,4 @@ If you use this code for your research, please consider citing:
 
 ## License
 
-<a rel="license" href="https://creativecommons.org/licenses/by-nc-sa/3.0/us/">
-  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/3.0/us/88x31.png" />
-</a>
-<br />
-This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/3.0/us/">Creative Commons
-Attribution-NonCommercial-ShareAlike 3.0 United States License</a>.
-
+Creative Commons Zero v1.0 Universal

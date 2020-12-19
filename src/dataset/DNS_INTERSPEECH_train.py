@@ -62,11 +62,6 @@ class Dataset(BaseDataset):
         noise_dataset_list = [line.rstrip('\n') for line in open(expand_path(noise_dataset), "r")]
         rir_dataset_list = [line.rstrip('\n') for line in open(expand_path(rir_dataset), "r")]
 
-        print("Random shuffle datasets...")
-        random.shuffle(clean_dataset_list)
-        random.shuffle(noise_dataset_list)
-        random.shuffle(rir_dataset_list)
-
         clean_dataset_list = self._offset_and_limit(clean_dataset_list, clean_dataset_offset, clean_dataset_limit)
         noise_dataset_list = self._offset_and_limit(noise_dataset_list, noise_dataset_offset, noise_dataset_limit)
         rir_dataset_list = self._offset_and_limit(rir_dataset_list, rir_dataset_offset, rir_dataset_limit)
