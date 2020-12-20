@@ -1,7 +1,6 @@
 # FullSubNet
 
 ![GitHub repo size](https://img.shields.io/github/repo-size/haoxiangsnr/FullSubNet)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This Git repository for our paper "FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement" submitted to
 ICASSP 2021. [[Paper]](https://arxiv.org/abs/2010.15508)
