@@ -8,7 +8,7 @@ The reported performance of FullSuBNet in the paper is on this dataset. It consi
 per clip). You can download this dataset in [https://github.com/microsoft/DNS-Challenge.git](https://github.com/microsoft/DNS-Challenge.git).
 
 This Git repository contains the DNS Challenge dataset (INTERSPEECH 2020) and the newer DNS Challenge dataset (ICASSP 2021). The default branch of the
-Git repository is the ICASSP 2021 Dataset. You need to check out the default branch to INTERSPEECH 2020 branch.
+Git repository is the ICASSP 2021 Dataset. You need to check out the default branch to `interspeech2020` branch.
 
 ## Usage
 
@@ -40,10 +40,20 @@ python inference.py \
 Assuming that:
 
 - the file path of the training configuration is `config/train/fullsubnet_baseline.toml`
-- In the training configuration, `config["meta"]["save_dir"] = "~/Experiments/FullSubNet/"`
+- In the training configuration, `["meta"]["save_dir"] = "~/Experiments/FullSubNet/"`
 
 The logs will be stored in the `~/Experiments/FullSubNet/fullsubnet_baseline` directory. This directory contains the following:
 
-- `logs/` directory: store Tensorboard related data, including loss curve, waveform file, speech file.
-- `checkpoints/` directory: stores all checkpoints of the model, from which you can restart training or inference
-- `*.toml` file: backup of the training configuration file
+- `logs/` directory: store the Tensorboard related data, including loss curves, audio files, and spectrogram figures.
+- `checkpoints/` directory: stores all checkpoints of the model, from which you can resume the training or start an inference.
+- `*.toml` file: the backup of the training configuration.
+
+In the `logs/` directory, use the following command to visualize loss curves, spectrogram figures, and audio files during the training and the
+validation.
+
+```shell
+tensorboard --logdir ~/Experiments/FullSubNet/fullsubnet_baseline
+
+# specify a port
+tensorboard --logdir ~/Experiments/FullSubNet/fullsubnet_baseline --port 45454
+```
