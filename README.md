@@ -1,9 +1,13 @@
 # FullSubNet
 
+![Platform](https://img.shields.io/badge/Platform-macos%20%7C%20linux-lightgrey)
+![Python version](https://img.shields.io/badge/Python-%3E%3D3.8.0-orange)
+![Pytorch Version](https://img.shields.io/badge/PyTorch-%3E%3D1.7-brightgreen)
 ![GitHub repo size](https://img.shields.io/github/repo-size/haoxiangsnr/FullSubNet)
 
-This Git repository for our paper "FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement" submitted to
-ICASSP 2021. [[Paper]](https://arxiv.org/abs/2010.15508)
+This Git repository for official PyTorch implementation
+of "[A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement]((https://arxiv.org/abs/2010.15508))", submitted to ICASSP
+2021.
 
 <p align="center">
   <img width="460" src="docs/workflow.png" alt="workflow">
