@@ -1,0 +1,33 @@
+inherit = "config/common/fullband_train.toml"
+
+[meta]
+save_dir = "~/Experiments/full_band_model"
+use_amp = true
+
+[train_dataset.args]
+clean_dataset = "~/Datasets/DNS-Challenge/datasets/1208_train_bthAndWsj0.txt"
+noise_dataset = "~/Datasets/DNS-Challenge/datasets/1209_train_background_noise.txt"
+rir_dataset ="~/Datasets/DNS-Challenge/datasets/rir.txt"
+
+[validation_dataset.args]
+dataset_dir_list = ["~/Datasets/DNS-Challenge/datasets/test_set/mixed_wsj0_AND_chime4_keep900/no_reverb/", "~/Datasets/DNS-Challenge/datasets/test_set/mixed_wsj0_AND_chime4_keep900/with_reverb/"]
+
+[model]
+path = "model.full_band_model.Model"
+
+
+[train_dataset.dataloader]
+batch_size = 400
+num_workers = 8
+
+[trainer]
+path = "trainer.fullband_trainer.Trainer"
+[trainer.train]
+epochs = 5000
+save_checkpoint_interval = 1
+[trainer.validation]
+validation_interval = 1
+[trainer.visualization]
+n_samples = 20
+num_workers = 8
+metrics = ["WB_PESQ", "NB_PESQ", "STOI", "SI_SDR"]
