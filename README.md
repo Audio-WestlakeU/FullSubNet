@@ -28,8 +28,7 @@ You can use all of these things:
 
 - [Prerequisites](docs/prerequisites.md)
 - Getting Started
-  - [FullSubNet](docs/fullsubnet.md)
-  - [Fullband_baseline](docs/fullband_baseline.md)
+  - [FullSubNet & Fullband Baseline](docs/fullsubnet_fullband_baseline.md)
 
 ## Citation
 
