@@ -29,6 +29,8 @@ def main(rank, world_size, config, resume):
     # Initialize the process group
     dist.init_process_group("gloo", rank=rank, world_size=world_size)
 
+    # The DistributedSampler will split the dataset into the several cross-process parts.
+    # On the contrary, "Sampler=None, shuffle=True", each GPU will maintain its own dataset. w/o cross-process parts.
     train_dataloader = DataLoader(
         dataset=initialize_module(config["train_dataset"]["path"], args=config["train_dataset"]["args"]),
         **config["train_dataset"]["dataloader"],

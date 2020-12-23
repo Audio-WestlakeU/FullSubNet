@@ -37,7 +37,7 @@ num_workers = 36
 [train_dataset.dataloader]
 batch_size = 512
 num_workers = 10
-shuffle = false
+shuffle = true
 pin_memory = true
 drop_last = true
 

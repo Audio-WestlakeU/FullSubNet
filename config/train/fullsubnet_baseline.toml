@@ -15,7 +15,7 @@ num_sub_batches = 2
 [train_dataset.dataloader]
 batch_size = 80  # for V100 32GB, may be you need to reduce the value.
 num_workers = 6
-shuffle = false
+shuffle = true
 
 [trainer]
 path = "trainer.fullsubnet_trainer.Trainer"
