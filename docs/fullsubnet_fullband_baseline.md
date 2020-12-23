@@ -32,7 +32,7 @@ CUDA_VISABLE_DEVICES=0,1 python train.py -C config/train/fullsubnet_baseline.tom
 When you finish the training, you can enhance the noisy speech, e.g.:
 
 ```shell
-# inference for the FullSubNet model using the best model in all training epoches.
+# inference for the FullSubNet model using the best checkpoint in all training epochs.
 python inference.py \
   -C config/inference/fullsubnet.toml \
   -M ~/Experiments/FullSubNet/fullsubnet_baseline/checkpoints/best_model.tar \
