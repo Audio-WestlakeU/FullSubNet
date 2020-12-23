@@ -5,8 +5,7 @@
 ![Pytorch Version](https://img.shields.io/badge/PyTorch-%3E%3D1.7-brightgreen)
 ![GitHub repo size](https://img.shields.io/github/repo-size/haoxiangsnr/FullSubNet)
 
-This Git repository for official PyTorch implementation
-of "[A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement]((https://arxiv.org/abs/2010.15508))", submitted to ICASSP
+This Git repository for the official PyTorch implementation of "[A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement]((https://arxiv.org/abs/2010.15508))", submitted to ICASSP
 2021.
 
 <p align="center">
@@ -20,7 +19,7 @@ You can use all of these things:
 - Available models
     - [x] FullSubNet
     - [ ] Delayed Sub-Band LSTM
-    - [ ] Full-Band LSTM Baseline
+    - [x] Fullband LSTM Baseline
 - Available Datasets
     - [x] Deep Noise Suppression Challenge - INTERSPEECH 2020
     - [ ] Demand + CSTR VCTK Corpus
@@ -29,7 +28,8 @@ You can use all of these things:
 
 - [Prerequisites](docs/prerequisites.md)
 - Getting Started
-    - [FullSubNet](docs/fullsubnet.md)
+  - [FullSubNet](docs/fullsubnet.md)
+  - [Fullband_baseline](docs/fullband_baseline.md)
 
 ## Citation
 
@@ -48,5 +48,5 @@ If you use this code for your research, please consider citing:
 
 ## License
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/haoxiangsnr/FullSubNet/blob/main/LICENSE)
 

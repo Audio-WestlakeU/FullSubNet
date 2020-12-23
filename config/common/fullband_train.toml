@@ -20,7 +20,7 @@ clean_dataset_offset = 0
 noise_dataset = "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/noise.txt"
 noise_dataset_limit = false
 noise_dataset_offset = 0
-rir_dataset = "None"
+rir_dataset = false
 rir_dataset_limit = false
 rir_dataset_offset = 0
 snr_range = [-5, 20]
@@ -37,7 +37,7 @@ num_workers = 36
 [train_dataset.dataloader]
 batch_size = 512
 num_workers = 10
-shuffle = true
+shuffle = false
 pin_memory = true
 drop_last = true
 
@@ -48,7 +48,7 @@ dataset_dir_list = ["~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synt
 sr = 16000
 
 [model]
-path = "model.fullsubnet_model.Model"
+path = "model.fullband_model.Model"
 [model.args]
 n_freqs = 257
 look_ahead = 2

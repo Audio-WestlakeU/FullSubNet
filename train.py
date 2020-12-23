@@ -2,6 +2,7 @@ import argparse
 import os
 import random
 import sys
+from socket import socket
 
 import numpy as np
 import toml
@@ -21,7 +22,9 @@ def main(rank, world_size, config, resume):
 
     print(f"Running distributed training on rank {rank}.")
     os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "48484"  # An unused local port
+    s = socket()
+    s.bind(("", 0))
+    os.environ["MASTER_PORT"] = s.getsockname()[1]  # A random local port
 
     # Initialize the process group
     dist.init_process_group("gloo", rank=rank, world_size=world_size)

@@ -37,7 +37,7 @@ num_workers = 36
 [train_dataset.dataloader]
 batch_size = 512
 num_workers = 10
-shuffle = true
+shuffle = false
 pin_memory = true
 drop_last = true
 
@@ -58,6 +58,7 @@ fband_output_activate_function = "ReLU"
 sband_output_activate_function = false
 fband_model_hidden_size = 512
 sband_model_hidden_size = 384
+bidirectional = false
 weight_init = true
 #use_offline_laplace_norm = true
 #use_offline_gaussian_norm = false

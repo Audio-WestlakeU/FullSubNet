@@ -16,6 +16,7 @@ class Model(BaseModel):
                  sband_output_activate_function,
                  fband_model_hidden_size,
                  sband_model_hidden_size,
+                 bidirectional=False,
                  weight_init=True,
                  num_sub_batches=3,
                  use_offline_norm=True,
@@ -43,7 +44,7 @@ class Model(BaseModel):
             output_size=n_freqs,
             hidden_size=fband_model_hidden_size,
             num_layers=2,
-            bidirectional=False,
+            bidirectional=bidirectional,
             sequence_model=sequence_model,
             output_activate_function=fband_output_activate_function
         )
@@ -53,7 +54,7 @@ class Model(BaseModel):
             output_size=2,
             hidden_size=sband_model_hidden_size,
             num_layers=2,
-            bidirectional=False,
+            bidirectional=bidirectional,
             sequence_model=sequence_model,
             output_activate_function=sband_output_activate_function
         )
@@ -99,8 +100,7 @@ class Model(BaseModel):
             fband_input = self.hybrid_norm(input.reshape(batch_size, n_channels * n_freqs, n_frames), 192)
             fband_input.reshape(batch_size, n_channels, n_freqs, n_frames)
         else:
-            raise NotImplementedError("You must set up a type of Norm. "
-                                      "e.g. offline_norm, cumulative_norm, forgetting_norm.")
+            raise NotImplementedError("You must set up a type of Norm. E.g., offline_norm, cumulative_norm, forgetting_norm.")
 
         # [B, 1, F, T] => [B, F, T] => [B, 1, F, T]
         fband_input = fband_input.reshape(batch_size, n_channels * n_freqs, n_frames)
@@ -128,8 +128,7 @@ class Model(BaseModel):
         elif self.use_hybrid_norm:
             sband_input = self.hybrid_norm(sband_input, 192)
         else:
-            raise NotImplementedError("You must set up a type of Norm. "
-                                      "e.g. offline_norm, cumulative_norm, forgetting_norm.")
+            raise NotImplementedError("You must set up a type of Norm. E.g., offline_norm, cumulative_norm, forgetting_norm.")
 
         # Speed up training without significant performance degradation
         # This part of the content will be updated in the paper later

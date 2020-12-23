@@ -35,3 +35,4 @@ use_cumulative_norm = false
 use_forgetting_norm = false
 use_hybrid_norm = false
 num_sub_batches = 2
+bidirectional = false
