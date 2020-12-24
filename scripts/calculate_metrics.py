@@ -1,5 +1,7 @@
 import argparse
 import os
+import sys
+sys.path.append(os.path.join(os.getcwd(), "src"))
 from inspect import getmembers, isfunction
 from pathlib import Path
 
@@ -137,6 +139,7 @@ def main(args):
 
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(
         description="输入两个目录的 scp 文件，计算各种评价指标的均值",
         epilog="python calculate_metrics.py -E 'est_dir' -R 'ref_dir' -M STOI,PESQ,SI_SDR,V_PESQ"

@@ -150,6 +150,8 @@ class BaseTrainer:
         """
         print(f"\t Saving {epoch} epoch model checkpoint...")
 
+        # TODO
+        # 统一训练与推理时的处理方式："module.*"...
         state_dict = {
             "epoch": epoch,
             "best_score": self.best_score,
