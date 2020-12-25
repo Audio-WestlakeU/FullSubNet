@@ -1,6 +1,7 @@
 import time
 from functools import partial
 from pathlib import Path
+from collections import OrderedDict
 
 import librosa
 import toml
@@ -84,7 +85,13 @@ class BaseInferencer:
         epoch = model_checkpoint["epoch"]
         print(f"当前正在处理 tar 格式的模型断点，其 epoch 为：{epoch}.")
 
-        model.load_state_dict(model_static_dict)
+        new_state_dict = OrderedDict()
+        for k, v in model_static_dict.items():
+            name = k[7:]  # remove `module.`
+            new_state_dict[name] = v
+            
+        # load params
+        model.load_state_dict(new_state_dict)
         model.to(device)
         model.eval()
         return model, model_checkpoint["epoch"]
