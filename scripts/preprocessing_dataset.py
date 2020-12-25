@@ -1,9 +1,12 @@
+import os
 import random
+import sys
 from pathlib import Path
 
 import librosa
 from tqdm import tqdm
 
+sys.path.append(os.path.join(os.getcwd(), "src"))
 from util.acoustic_utils import is_clipped, load_wav, activity_detector
 
 candidate_datasets = [
