@@ -1,13 +1,13 @@
 inherit = "config/common/fullband_train.toml"
 
 [meta]
-save_dir = "~/Experiments/FullSubNet"
+save_dir = "~/Experiments/Fullband"
 use_amp = true
 
 [model]
 path = "model.fullband_model.Model"
 [model.args]
-use_offline_norm = true
+use_offline_laplace_norm = true
 
 [train_dataset.dataloader]
 batch_size = 80  # for V100 32GB, may be you need to reduce the value.

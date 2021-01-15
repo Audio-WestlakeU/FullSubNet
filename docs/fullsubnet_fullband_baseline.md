@@ -32,14 +32,17 @@ CUDA_VISABLE_DEVICES=0,1 python train.py -C config/train/fullsubnet_baseline.tom
 When you finish the training, you can enhance the noisy speech, e.g.:
 
 ```shell
-# inference for the FullSubNet model using the best checkpoint in all training epochs.
+# Inference for the FullSubNet model using the best checkpoint in all training epochs.
 python inference.py \
   -C config/inference/fullsubnet.toml \
   -M ~/Experiments/FullSubNet/fullsubnet_baseline/checkpoints/best_model.tar \
-  -O ../Enhanced
+  -O ~/Enhancement/fullsubnet_dns_interspeech_no_reverb
   
-# TODO 
 # Inference for the Fullband Baseline model
+python inference.py \
+  -C config/inference/fullband.toml \
+  -M ~/Experiments/FullSubNet/fullband_baseline/checkpoints/best_model.tar \
+  -O ~/Enhancement/fullband_dns_interspeech_no_reverb
 ```
 
 ### Apply a Pre-Trained Model
@@ -67,4 +70,15 @@ tensorboard --logdir ~/Experiments/FullSubNet/fullsubnet_baseline
 
 # specify a port
 tensorboard --logdir ~/Experiments/FullSubNet/fullsubnet_baseline --port 45454
+```
+
+### Metrics
+
+```shell
+# DNS-INTERSPEECH-2020
+python scripts/calculate_metrics.py \
+  -R ~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/no_reverb/clean \
+  -E ~/Enhancement/fullsubnet_dns_interspeech_no_reverb/enhanced_1155 \
+  -M SI_SDR,STOI,WB_PESQ,NB_PESQ \
+  -S DNS_1
 ```

@@ -8,7 +8,6 @@ use_amp = true
 path = "model.fullsubnet_model.Model"
 [model.args]
 sband_model_hidden_size = 384
-bidirectional = true
 use_offline_norm = true
 num_sub_batches = 2
 
