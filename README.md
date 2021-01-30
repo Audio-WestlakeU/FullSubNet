@@ -5,7 +5,7 @@
 ![Pytorch Version](https://img.shields.io/badge/PyTorch-%3E%3D1.7-brightgreen)
 ![GitHub repo size](https://img.shields.io/github/repo-size/haoxiangsnr/FullSubNet)
 
-This Git repository for the official PyTorch implementation of ["A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement"](https://arxiv.org/abs/2010.15508), submitted to ICASSP
+This Git repository for the official PyTorch implementation of ["A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement"](https://arxiv.org/abs/2010.15508), accepted to ICASSP
 2021.
 
 :blossom: See the demo page in [this link](https://www.haoxiangsnr.com/demo/fullsubnet/).
