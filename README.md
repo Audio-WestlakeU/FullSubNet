@@ -8,7 +8,7 @@
 This Git repository for the official PyTorch implementation of ["A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement"](https://arxiv.org/abs/2010.15508), accepted to ICASSP
 2021.
 
-[[Demo\]](https://www.haoxiangsnr.com/demo/fullsubnet/) | [[Pre-print\]](https://arxiv.org/abs/2010.15508)
+:bulb:[[Demo\]](https://www.haoxiangsnr.com/demo/fullsubnet/) | :page_facing_up:[[PDF\]](https://arxiv.org/abs/2010.15508)
 
 <p align="center">
   <img width="460" src="docs/workflow.png" alt="workflow">
