@@ -1,0 +1,9 @@
+inherit = "config/common/fullband_inference.toml"
+
+[dataset]
+path = "dataset.DNS_INTERSPEECH_inference.Dataset"
+[dataset.args]
+noisy_dataset = "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/no_reverb/noisy"
+limit = false
+offset = 0
+sr = 16000

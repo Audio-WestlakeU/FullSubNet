@@ -1,0 +1,85 @@
+[meta]
+save_dir = "../FullSubNet-Experiment/ttt"
+description = "This is a description of FullSubNet experiment."
+seed = 0  # set random seed for random, numpy, pytorch-gpu and pytorch-cpu
+keep_reproducibility = false  # see https://pytorch.org/docs/stable/notes/randomness.html
+use_amp = false  # use automatic mixed precision, it will benefits Tensor Core-enabled GPU (e.g. Volta, Turing, Ampere). 2-3X speedup。
+
+[acoustic]
+sr = 16000
+n_fft = 512
+win_length = 512
+hop_length = 256
+
+[train_dataset]
+path = "dataset.DNS_INTERSPEECH_train.Dataset"
+[train_dataset.args]
+clean_dataset = "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/clean_0.6.txt"
+clean_dataset_limit = false
+clean_dataset_offset = 0
+noise_dataset = "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/noise.txt"
+noise_dataset_limit = false
+noise_dataset_offset = 0
+rir_dataset = false
+rir_dataset_limit = false
+rir_dataset_offset = 0
+snr_range = [-5, 20]
+reverb_proportion = 0.75
+silence_length = 0.2
+target_dB_FS = -25
+target_dB_FS_floating_value = 10
+sub_sample_length = 3.072
+sr = 16000
+pre_load_clean_dataset = false
+pre_load_noise = false
+pre_load_rir = false
+num_workers = 36
+[train_dataset.dataloader]
+batch_size = 512
+num_workers = 10
+shuffle = true
+pin_memory = true
+drop_last = true
+
+[validation_dataset]
+path = "dataset.DNS_INTERSPEECH_validation.Dataset"
+[validation_dataset.args]
+dataset_dir_list = ["~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/with_reverb/", "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/no_reverb/"]
+sr = 16000
+
+[model]
+path = "model.fullband_model.Model"
+[model.args]
+n_freqs = 257
+look_ahead = 2
+sequence_model = "LSTM"
+output_activate_function = false
+hidden_size = 512
+weight_init = true
+use_offline_laplace_norm = true
+use_offline_gaussian_norm = false
+use_cumulative_norm = false
+use_forgetting_norm = false
+use_hybrid_norm = false
+
+[loss_function]
+path = "model.loss.mse_loss"
+
+[optimizer]
+lr = 0.001
+beta1 = 0.9
+beta2 = 0.999
+
+[trainer]
+path = "trainer.fullsubnet_trainer.Trainer"
+[trainer.train]
+epochs = 9999
+save_checkpoint_interval = 10
+clip_grad_norm_value = 5
+[trainer.validation]
+validation_interval = 5
+save_max_metric_score = true
+[trainer.visualization]
+n_samples = 10
+num_workers = 36
+metrics = ["WB_PESQ", "NB_PESQ", "STOI", "SI_SDR"]

@@ -1,0 +1,28 @@
+inherit = "config/common/fullsubnet_train.toml"
+
+[meta]
+save_dir = "~/Experiments/FullSubNet"
+use_amp = true
+
+[model]
+path = "model.fullsubnet_model.Model"
+[model.args]
+sband_model_hidden_size = 384
+use_offline_norm = true
+num_sub_batches = 2
+
+[train_dataset.dataloader]
+batch_size = 80  # for V100 32GB, may be you need to reduce the value.
+num_workers = 6
+shuffle = true
+
+[trainer]
+path = "trainer.fullsubnet_trainer.Trainer"
+[trainer.train]
+save_checkpoint_interval = 5
+[trainer.validation]
+validation_interval = 5
+[trainer.visualization]
+n_samples = 20
+num_workers = 6
+metrics = ["WB_PESQ", "NB_PESQ", "STOI", "SI_SDR"]

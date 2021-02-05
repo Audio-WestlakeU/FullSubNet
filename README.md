@@ -8,7 +8,7 @@
 This Git repository for the official PyTorch implementation of ["A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement"](https://arxiv.org/abs/2010.15508), accepted to ICASSP
 2021.
 
-:blossom: See the demo page in [this link](https://www.haoxiangsnr.com/demo/fullsubnet/).
+[[Demo\]](https://www.haoxiangsnr.com/demo/fullsubnet/) | [[Pre-print\]](https://arxiv.org/abs/2010.15508)
 
 <p align="center">
   <img width="460" src="docs/workflow.png" alt="workflow">
@@ -20,7 +20,7 @@ You can use all of these things:
 
 - Available models
     - [x] FullSubNet
-    - [ ] Delayed Sub-Band LSTM
+    - [x] Delayed Sub-Band LSTM
     - [x] Fullband LSTM Baseline
 - Available Datasets
     - [x] Deep Noise Suppression Challenge - INTERSPEECH 2020
