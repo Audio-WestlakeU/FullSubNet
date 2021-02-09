@@ -6,27 +6,66 @@ import torch
 
 
 def stft(y, n_fft, hop_length, win_length, device):
-    assert y.dim() == 2
+    """
+    Args:
+        y: [B, F, T]
+        n_fft:
+        hop_length:
+        win_length:
+        device:
 
-    window = torch.hann_window(n_fft).to(device)
-    return torch.stft(y, n_fft, hop_length, win_length, window=window, return_complex=False)
+    Returns:
+        [B, F, T], **complex-valued** STFT coefficients
+
+    """
+    assert y.dim() == 2
+    return torch.stft(
+        y,
+        n_fft,
+        hop_length,
+        win_length,
+        window=torch.hann_window(n_fft).to(device),
+        return_complex=True
+    )
 
 
 def istft(complex_tensor, n_fft, hop_length, win_length, device, length=None, use_mag_phase=False):
-    window = torch.hann_window(n_fft).to(device)
+    """
+    Wrapper for the official torch.istft
 
+    Args:
+        complex_tensor: [B, F, T, 2] or (mag: [B, F, T], phase: [B, F, T])
+        n_fft:
+        hop_length:
+        win_length:
+        device:
+        length:
+        use_mag_phase:
+
+    Returns:
+        [B, T]
+    """
     if use_mag_phase:
+        # (mag, phase) or [mag, phase]
         assert isinstance(complex_tensor, tuple) or isinstance(complex_tensor, list)
         mag, phase = complex_tensor
-        complex_tensor = torch.stack([(mag * torch.cos(phase)), (mag * torch.sin(phase))], dim=-1)
+        complex_tensor = torch.stack([
+            mag * torch.cos(phase),
+            mag * torch.sin(phase)
+        ], dim=-1)
 
-    return torch.istft(complex_tensor, n_fft, hop_length, win_length, window, length=length)
+    return torch.istft(
+        complex_tensor,
+        n_fft,
+        hop_length,
+        win_length,
+        window=torch.hann_window(n_fft).to(device),
+        length=length
+    )
 
 
 def mag_phase(complex_tensor):
-    mag = (complex_tensor.pow(2.).sum(-1) + 1e-8).pow(0.5 * 1.0)
-    phase = torch.atan2(complex_tensor[..., 1], complex_tensor[..., 0])
-    return mag, phase
+    return torch.abs(complex_tensor), torch.angle(complex_tensor)
 
 
 def norm_amplitude(y, scalar=None, eps=1e-6):

@@ -57,9 +57,9 @@ class ExecutionTime:
         return int(time.time() - self.start_time)
 
 
-def initialize_module(path: str, args=None, initialize=True):
+def initialize_module(path: str, args: dict = None, initialize: bool = True):
     """
-    Load module dynamically with args.
+    Load module dynamically with "args".
 
     Args:
         path: module path in this project.
@@ -208,3 +208,8 @@ def prepare_device(n_gpu: int, keep_reproducibility=False):
 
 def expand_path(path):
     return os.path.abspath(os.path.expanduser(path))
+
+
+def basename(path):
+    filename, ext = os.path.splitext(os.path.basename(path))
+    return filename, ext

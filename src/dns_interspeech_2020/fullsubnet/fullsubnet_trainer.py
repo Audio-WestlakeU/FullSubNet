@@ -4,7 +4,7 @@ from torch.cuda.amp import autocast
 from tqdm import tqdm
 
 from audio_zen.trainer.base_trainer import BaseTrainer
-from audio_zen.acoustic.mask import mag_phase, get_complex_ideal_ratio_mask, drop_sub_band
+from audio_zen.acoustic.mask import mag_phase, build_complex_ideal_ratio_mask, drop_sub_band
 
 plt.switch_backend('agg')
 
@@ -39,7 +39,7 @@ class Trainer(BaseTrainer):
             clean_complex = self.torch_stft(clean)
 
             noisy_mag, _ = mag_phase(noisy_complex)
-            ground_truth_cIRM = get_complex_ideal_ratio_mask(noisy_complex, clean_complex)  # [B, F, T, 2]
+            ground_truth_cIRM = build_complex_ideal_ratio_mask(noisy_complex, clean_complex)  # [B, F, T, 2]
             ground_truth_cIRM = drop_sub_band(
                 ground_truth_cIRM.permute(0, 3, 1, 2),  # [B, 2, F ,T]
                 self.model.module.num_sub_batches
@@ -89,7 +89,7 @@ class Trainer(BaseTrainer):
             clean_complex = self.torch_stft(clean)
 
             noisy_mag, _ = mag_phase(noisy_complex)
-            ground_truth_cIRM = get_complex_ideal_ratio_mask(noisy_complex, clean_complex)  # [B, F, T, 2]
+            ground_truth_cIRM = build_complex_ideal_ratio_mask(noisy_complex, clean_complex)  # [B, F, T, 2]
 
             noisy_mag = noisy_mag.unsqueeze(1)
             pred_cRM = self.model(noisy_mag)
@@ -105,7 +105,7 @@ class Trainer(BaseTrainer):
             enhanced_imag = pred_cRM[..., 1] * noisy_complex[..., 0] + pred_cRM[..., 0] * noisy_complex[..., 1]
             enhanced_complex = torch.stack((enhanced_real, enhanced_imag), dim=-1)
 
-            enhanced = self.istft(enhanced_complex, length=noisy.size(-1), use_mag_phase=False)
+            enhanced = self.torch_istft(enhanced_complex, length=noisy.size(-1), use_mag_phase=False)
 
             noisy = noisy.detach().squeeze(0).cpu().numpy()
             clean = clean.detach().squeeze(0).cpu().numpy()

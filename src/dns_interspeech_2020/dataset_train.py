@@ -6,7 +6,7 @@ from scipy import signal
 from tqdm import tqdm
 
 from audio_zen.dataset.base_dataset import BaseDataset
-from audio_zen.acoustic.mask import norm_amplitude, tailor_dB_FS, is_clipped, load_wav, subsample
+from audio_zen.acoustic.feature import norm_amplitude, tailor_dB_FS, is_clipped, load_wav, subsample
 from audio_zen.utils import expand_path
 
 
@@ -67,13 +67,13 @@ class Dataset(BaseDataset):
         rir_dataset_list = self._offset_and_limit(rir_dataset_list, rir_dataset_offset, rir_dataset_limit)
 
         if pre_load_clean_dataset:
-            clean_dataset_list = self._preload_dataset(clean_dataset_list, remark="Clean dataset")
+            clean_dataset_list = self._preload_dataset(clean_dataset_list, remark="Clean Dataset")
 
         if pre_load_noise:
-            noise_dataset_list = self._preload_dataset(noise_dataset_list, remark="Noise dataset")
+            noise_dataset_list = self._preload_dataset(noise_dataset_list, remark="Noise Dataset")
 
         if pre_load_rir:
-            rir_dataset_list = self._preload_dataset(rir_dataset_list, remark="RIR dataset")
+            rir_dataset_list = self._preload_dataset(rir_dataset_list, remark="RIR Dataset")
 
         self.clean_dataset_list = clean_dataset_list
         self.noise_dataset_list = noise_dataset_list

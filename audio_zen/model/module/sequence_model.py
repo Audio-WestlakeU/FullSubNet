@@ -58,6 +58,8 @@ class SequenceModel(nn.Module):
                 self.activate_function = nn.Tanh()
             elif output_activate_function == "ReLU":
                 self.activate_function = nn.ReLU()
+            elif output_activate_function == "ReLU6":
+                self.activate_function = nn.ReLU6()
             else:
                 raise NotImplementedError(f"Not implemented activation function {self.activate_function}")
 

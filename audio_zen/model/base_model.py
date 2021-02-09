@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 from torch.nn import functional
+from audio_zen.constant import EPSILON
 
 
 class BaseModel(nn.Module):
@@ -150,6 +151,14 @@ class BaseModel(nn.Module):
 
     @staticmethod
     def hybrid_norm(input, sample_length_in_training=192):
+        """
+        Args:
+            input: [B, F, T]
+            sample_length_in_training:
+
+        Returns:
+            [B, F, T]
+        """
         assert input.ndim == 3
         device = input.device
         data_type = input.dtype
@@ -187,78 +196,126 @@ class BaseModel(nn.Module):
         return input / (cum_mean + eps)
 
     @staticmethod
-    def cumulative_norm(input):
-        eps = 1e-10
-        device = input.device
-        data_type = input.dtype
-        n_dim = input.ndim
+    def offline_laplace_norm(input):
+        """
 
-        assert n_dim in (3, 4)
+        Args:
+            input: [B, C, F, T]
 
-        if n_dim == 3:
-            n_channels = 1
-            batch_size, n_freqs, n_frames = input.size()
-        else:
-            batch_size, n_channels, n_freqs, n_frames = input.size()
-            input = input.reshape(batch_size * n_channels, n_freqs, n_frames)
+        Returns:
+            [B, C, F, T]
+        """
+        # utterance-level mu
+        mu = torch.mean(input, dim=(1, 2, 3), keepdim=True)
 
-        step_sum = torch.sum(input, dim=1)  # [B, T]
+        normed = input / (mu + 1e-5)
+
+        return normed
+
+    @staticmethod
+    def cumulative_laplace_norm(input):
+        """
+
+        Args:
+            input: [B, C, F, T]
+
+        Returns:
+
+        """
+        batch_size, num_channels, num_freqs, num_frames = input.size()
+        input = input.reshape(batch_size * num_channels, num_freqs, num_frames)
+
+        step_sum = torch.sum(input, dim=1)  # [B * C, F, T] => [B, T]
         cumulative_sum = torch.cumsum(step_sum, dim=-1)  # [B, T]
 
-        entry_count = torch.arange(n_freqs, n_freqs * n_frames + 1, n_freqs, dtype=data_type, device=device)
-        entry_count = entry_count.reshape(1, n_frames)  # [1, T]
+        entry_count = torch.arange(
+            num_freqs,
+            num_freqs * num_frames + 1,
+            num_freqs,
+            dtype=input.dtype,
+            device=input.device
+        )
+        entry_count = entry_count.reshape(1, num_frames)  # [1, T]
         entry_count = entry_count.expand_as(cumulative_sum)  # [1, T] => [B, T]
 
-        cum_mean = cumulative_sum / entry_count  # B, T
+        cumulative_mean = cumulative_sum / entry_count  # B, T
+        cumulative_mean = cumulative_mean.reshape(batch_size * num_channels, 1, num_frames)
 
-        cum_mean = cum_mean.reshape(batch_size * n_channels, 1, n_frames)
+        normed = input / (cumulative_mean + EPSILON)
 
-        x = input / (cum_mean + eps)
+        return normed.reshape(batch_size, num_channels, num_freqs, num_frames)
 
-        if n_dim == 4:
-            x = x.reshape(batch_size, n_channels, n_freqs, n_frames)
+    @staticmethod
+    def offline_gaussian_norm(input):
+        """
+        Zero-Norm
+        Args:
+            input: [B, C, F, T]
 
-        return x
+        Returns:
+            [B, C, F, T]
+        """
+        mu = torch.mean(input, dim=(1, 2, 3), keepdim=True)
+        std = torch.std(input, dim=(1, 2, 3), keepdim=True)
+
+        normed = (input - mu) / (std + 1e-5)
+
+        return normed
 
     @staticmethod
     def cumulative_layer_norm(input):
-        eps = 1e-10
-        device = input.device
-        data_type = input.dtype
-        n_dim = input.ndim
+        """
+        Online zero-norm
 
-        assert n_dim in (3, 4)
+        Args:
+            input: [B, C, F, T]
 
-        if n_dim == 3:
-            n_channels = 1
-            batch_size, n_freqs, n_frames = input.size()
-        else:
-            batch_size, n_channels, n_freqs, n_frames = input.size()
-            input = input.reshape(batch_size * n_channels, n_freqs, n_frames)
+        Returns:
+            [B, C, F, T]
+        """
+        batch_size, num_channels, num_freqs, num_frames = input.size()
+        input = input.reshape(batch_size * num_channels, num_freqs, num_frames)
 
-        step_sum = torch.sum(input, dim=1)  # [B, T]
+        step_sum = torch.sum(input, dim=1)  # [B * C, F, T] => [B, T]
         step_pow_sum = torch.sum(torch.square(input), dim=1)
 
         cumulative_sum = torch.cumsum(step_sum, dim=-1)  # [B, T]
         cumulative_pow_sum = torch.cumsum(step_pow_sum, dim=-1)  # [B, T]
 
-        entry_count = torch.arange(n_freqs, n_freqs * n_frames + 1, n_freqs, dtype=data_type, device=device)
-        entry_count = entry_count.reshape(1, n_frames)  # [1, T]
+        entry_count = torch.arange(
+            num_freqs,
+            num_freqs * num_frames + 1,
+            num_freqs,
+            dtype=input.dtype,
+            device=input.device
+        )
+        entry_count = entry_count.reshape(1, num_frames)  # [1, T]
         entry_count = entry_count.expand_as(cumulative_sum)  # [1, T] => [B, T]
 
-        cum_mean = cumulative_sum / entry_count  # B, T
-        cum_var = (cumulative_pow_sum - 2 * cum_mean * cumulative_sum) / entry_count + cum_mean.pow(2)  # B, T
-        cum_std = (cum_var + eps).sqrt()  # B, T
+        cumulative_mean = cumulative_sum / entry_count  # [B, T]
+        cumulative_var = (cumulative_pow_sum - 2 * cumulative_mean * cumulative_sum) / entry_count + cumulative_mean.pow(2)  # [B, T]
+        cumulative_std = torch.sqrt(cumulative_var + EPSILON)  # [B, T]
 
-        cum_mean = cum_mean.reshape(batch_size * n_channels, 1, n_frames)
-        cum_std = cum_std.reshape(batch_size * n_channels, 1, n_frames)
+        cumulative_mean = cumulative_mean.reshape(batch_size * num_channels, 1, num_frames)
+        cumulative_std = cumulative_std.reshape(batch_size * num_channels, 1, num_frames)
 
-        x = (input - cum_mean) / cum_std
+        normed = (input - cumulative_mean) / cumulative_std
 
-        if n_dim == 4:
-            x = x.reshape(batch_size, n_channels, n_freqs, n_frames)
+        return normed.reshape(batch_size, num_channels, num_freqs, num_frames)
 
-        return x
+    def norm_wrapper(self, norm_type: str):
+        if norm_type == "offline_laplace_norm":
+            norm = self.offline_laplace_norm
+        elif norm_type == "cumulative_laplace_norm":
+            norm = self.cumulative_laplace_norm
+        elif norm_type == "offline_gaussian_norm":
+            norm = self.offline_gaussian_norm
+        elif norm_type == "cumulative_layer_norm":
+            norm = self.cumulative_layer_norm
+        else:
+            raise NotImplementedError("You must set up a type of Norm. "
+                                      "e.g. offline_laplace_norm, cumulative_laplace_norm, forgetting_norm, etc.")
+        return norm
 
     def weight_init(self, m):
         """

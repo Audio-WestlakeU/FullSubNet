@@ -13,9 +13,10 @@ from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader
 
 from audio_zen.utils import initialize_module, merge_config
+import audio_zen.loss as loss
 
 
-def main(rank, world_size, config, resume):
+def entry(rank, world_size, config, resume):
     torch.manual_seed(config["meta"]["seed"])  # For both CPU and GPU
     np.random.seed(config["meta"]["seed"])
     random.seed(config["meta"]["seed"])
@@ -30,7 +31,7 @@ def main(rank, world_size, config, resume):
     dist.init_process_group("gloo", rank=rank, world_size=world_size)
 
     # The DistributedSampler will split the dataset into the several cross-process parts.
-    # On the contrary, "Sampler=None, shuffle=True", each GPU will get all data in the dataset.
+    # On the contrary, "Sampler=None, shuffle=True", each GPU will get all data in the whole dataset.
     train_dataloader = DataLoader(
         dataset=initialize_module(config["train_dataset"]["path"], args=config["train_dataset"]["args"]),
         **config["train_dataset"]["dataloader"],
@@ -51,7 +52,7 @@ def main(rank, world_size, config, resume):
         betas=(config["optimizer"]["beta1"], config["optimizer"]["beta2"])
     )
 
-    loss_function = initialize_module(config["loss_function"]["path"])
+    loss_function = getattr(loss, config["loss_function"]["name"])(**config["loss_function"]["args"])
     trainer_class = initialize_module(config["trainer"]["path"], initialize=False)
 
     trainer = trainer_class(
@@ -71,33 +72,29 @@ def main(rank, world_size, config, resume):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="FullSubNet")
-    parser.add_argument("-C", "--configuration", required=True, type=str, help="Configuration (*.json5).")
-    parser.add_argument("-P", "--preloaded_model_path", type=str, help="Path of the *.Pth file of the model.")
-    parser.add_argument("-R", "--resume", action="store_true", help="Resume experiment from latest checkpoint.")
-    parser.add_argument("-W", "--world_size", type=int, default=2, help="The number of GPUs you are using for training.")
+    parser.add_argument("-C", "--configuration", required=True, type=str, help="Configuration (*.toml).")
+    parser.add_argument("-P", "--preloaded_model_path", type=str, help="Path of the *.pth file of a model.")
+    parser.add_argument("-R", "--resume", action="store_true", help="Resume the experiment from latest checkpoint.")
+    parser.add_argument("-N", "--num_gpus", type=int, default=2, help="The number of GPUs you are using for training.")
     args = parser.parse_args()
 
     if args.preloaded_model_path:
         assert not args.resume, "'resume' conflicts with 'preloaded_model_path'."
 
-    custom_config = toml.load(args.configuration)
-    assert custom_config["inherit"], f"The config file should inherit from 'config/common/*.toml'."
-    common_config = toml.load(custom_config["inherit"])
-    del custom_config["inherit"]
-    configuration = merge_config(common_config, custom_config)
+    configuration = toml.load(args.configuration)
 
     configuration["meta"]["experiment_name"], _ = os.path.splitext(os.path.basename(args.configuration))
     configuration["meta"]["config_path"] = args.configuration
     configuration["meta"]["preloaded_model_path"] = args.preloaded_model_path
 
     # Expand python search path to "src"
-    sys.path.append(os.path.join(os.getcwd(), ".."))
+    # sys.path.append(os.path.join(os.getcwd(), ".."))
 
     # One training job is corresponding to one group (world).
     # The world size is the number of processes for training, which is usually the number of GPUs you are using for distributed training.
     # the rank is the unique ID given to a process.
     # Find more information about DistributedDataParallel (DDP) in https://pytorch.org/tutorials/intermediate/ddp_tutorial.html.
-    mp.spawn(main,
-             args=(args.world_size, configuration, args.resume),
+    mp.spawn(entry,
+             args=(args.num_gpus, configuration, args.resume),
              nprocs=args.world_size,
              join=True)

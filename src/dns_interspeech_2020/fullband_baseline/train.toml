@@ -1,0 +1,102 @@
+[meta]
+save_dir = "~/Experiments/Fullband"
+description = "This is a description of FullSubNet experiment."
+seed = 0
+keep_reproducibility = false
+use_amp = false
+
+
+[acoustic]
+hop_length = 256
+n_fft = 512
+sr = 16000
+win_length = 512
+
+
+[loss_function]  # 这里的逻辑稍有区别
+name = "mse"
+[loss_function.args]
+
+
+[optimizer]
+beta1 = 0.9
+beta2 = 0.999
+lr = 0.001
+
+
+[train_dataset]
+path = "dataset_train.Dataset"
+[train_dataset.args]
+clean_dataset = "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/clean_0.6.txt"
+clean_dataset_limit = false
+clean_dataset_offset = 0
+noise_dataset = "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/noise.txt"
+noise_dataset_limit = false
+noise_dataset_offset = 0
+num_workers = 36
+pre_load_clean_dataset = false
+pre_load_noise = false
+pre_load_rir = false
+reverb_proportion = 0.75
+rir_dataset = false
+rir_dataset_limit = false
+rir_dataset_offset = 0
+silence_length = 0.2
+snr_range = [-5, 20]
+sr = 16000
+sub_sample_length = 3.072
+target_dB_FS = -25
+target_dB_FS_floating_value = 10
+
+[train_dataset.dataloader]
+batch_size = 80
+drop_last = true
+num_workers = 10
+pin_memory = true
+shuffle = true
+
+
+[validation_dataset]
+path = "dataset.DNS_INTERSPEECH_validation.Dataset"
+
+[validation_dataset.args]
+dataset_dir_list = [
+    "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/with_reverb/",
+    "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/no_reverb/"
+]
+
+
+[model]
+path = "model.fullband_model.Model"
+
+[model.args]
+hidden_size = 512
+look_ahead = 2
+n_freqs = 257
+output_activate_function = false
+sequence_model = "LSTM"
+use_cumulative_norm = false
+use_forgetting_norm = false
+use_hybrid_norm = false
+use_offline_gaussian_norm = false
+use_offline_laplace_norm = true
+weight_init = true
+
+
+
+[trainer]
+path = "trainer.fullsubnet_trainer.Trainer"
+
+[trainer.train]
+clip_grad_norm_value = 1
+epochs = 9999
+save_checkpoint_interval = 10
+
+[trainer.validation]
+save_max_metric_score = true
+validation_interval = 1
+
+[trainer.visualization]
+metrics = ["WB_PESQ", "NB_PESQ", "STOI", "SI_SDR"]
+n_samples = 10
+num_workers = 36
