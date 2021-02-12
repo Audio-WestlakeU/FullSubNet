@@ -18,13 +18,13 @@ You can use the default training configuration:
 
 ```shell
 # Use default config and two GPUs to train the FullSubNet model
-CUDA_VISABLE_DEVICES=0,1 python train.py -C config/train/fullsubnet_baseline.toml -W 2
+CUDA_VISIBLE_DEVICES=0,1 python train.py -C config/train/fullsubnet_baseline.toml -W 2
 
 # Use default config and three GPUs to train the Fullband baseline model
-CUDA_VISABLE_DEVICES=0,1 python train.py -C config/train/fullband_baseline.toml -W 3
+CUDA_VISIBLE_DEVICES=0,1 python train.py -C config/train/fullband_baseline.toml -W 3
 
 # Resume the experiment
-CUDA_VISABLE_DEVICES=0,1 python train.py -C config/train/fullsubnet_baseline.toml -W 2 -R
+CUDA_VISIBLE_DEVICES=0,1 python train.py -C config/train/fullsubnet_baseline.toml -W 2 -R
 ```
 
 ### Inference
