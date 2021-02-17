@@ -1,5 +1,5 @@
 [meta]
-save_dir = "../FullSubNet-Experiment/ttt"
+save_dir = "~/Experiments/FullSubNet/fullsubnet"
 description = "This is a description of FullSubNet experiment."
 seed = 0  # set random seed for random, numpy, pytorch-gpu and pytorch-cpu
 keep_reproducibility = false  # see https://pytorch.org/docs/stable/notes/randomness.html
@@ -11,8 +11,10 @@ n_fft = 512
 win_length = 512
 hop_length = 256
 
+
 [train_dataset]
 path = "dataset.DNS_INTERSPEECH_train.Dataset"
+
 [train_dataset.args]
 clean_dataset = "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/clean_0.6.txt"
 clean_dataset_limit = false
@@ -34,21 +36,26 @@ pre_load_clean_dataset = false
 pre_load_noise = false
 pre_load_rir = false
 num_workers = 36
+
 [train_dataset.dataloader]
-batch_size = 512
+batch_size = 80
 num_workers = 10
 shuffle = true
 pin_memory = true
 drop_last = true
 
+
 [validation_dataset]
 path = "dataset.DNS_INTERSPEECH_validation.Dataset"
+
 [validation_dataset.args]
 dataset_dir_list = ["~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/with_reverb/", "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/no_reverb/"]
 sr = 16000
 
+
 [model]
 path = "model.fullsubnet_model.Model"
+
 [model.args]
 n_freqs = 257
 n_neighbor = 15
@@ -60,13 +67,11 @@ fband_model_hidden_size = 512
 sband_model_hidden_size = 384
 bidirectional = false
 weight_init = true
-#use_offline_laplace_norm = true
-#use_offline_gaussian_norm = false
 use_offline_norm = true
 use_cumulative_norm = false
 use_forgetting_norm = false
 use_hybrid_norm = false
-num_sub_batches = 3
+num_sub_batches = 2
 
 [loss_function]
 path = "model.loss.mse_loss"
@@ -86,6 +91,6 @@ clip_grad_norm_value = 5
 validation_interval = 5
 save_max_metric_score = true
 [trainer.visualization]
-n_samples = 10
+n_samples = 20
 num_workers = 36
 metrics = ["WB_PESQ", "NB_PESQ", "STOI", "SI_SDR"]

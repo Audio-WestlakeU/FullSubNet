@@ -1,9 +1,0 @@
-inherit = "config/common/fullsubnet_inference.toml"
-
-[dataset]
-path = "dataset.DNS_INTERSPEECH_inference.Dataset"
-[dataset.args]
-noisy_dataset = "~/Datasets/DNS-Challenge-ICASSP/datasets/ICASSP_blind_test_set/track_1/noisy"
-limit = false
-offset = 0
-sr = 16000

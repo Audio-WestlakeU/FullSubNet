@@ -49,7 +49,7 @@ target_dB_FS = -25
 target_dB_FS_floating_value = 10
 
 [train_dataset.dataloader]
-batch_size = 80
+batch_size = 320
 num_workers = 40
 drop_last = true
 pin_memory = true
@@ -76,7 +76,7 @@ hidden_size = 512
 sequence_model = "LSTM"
 output_activate_function = false
 look_ahead = 2
-norm_type="offline_laplace_norm"
+norm_type = "offline_laplace_norm"
 weight_init = true
 
 

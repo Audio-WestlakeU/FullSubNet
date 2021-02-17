@@ -135,30 +135,6 @@ class Inferencer(BaseInferencer):
 
         return enhanced
 
-    @torch.no_grad()
-    def __call__(self):
-        inference_type = self.inference_config["type"]
-        assert inference_type in dir(self), f"Not implemented Inferencer type: {inference_type}"
-
-        inference_args = self.inference_config["args"]
-
-        for noisy, name in tqdm(self.dataloader, desc="Inference"):
-            assert len(name) == 1, "The batch size of inference stage must 1."
-            name = name[0]
-
-            enhanced = getattr(self, inference_type)(noisy.to(self.device), inference_args)
-
-            if abs(enhanced).any() > 1:
-                print(f"Warning: enhanced is not in the range [-1, 1], {name}")
-
-            amp = np.iinfo(np.int16).max
-            enhanced = np.int16(0.8 * amp * enhanced / np.max(np.abs(enhanced)))
-
-            # clnsp102_traffic_248091_3_snr0_tl-21_fileid_268 => clean_fileid_0
-            # name = "clean_" + "_".join(name.split("_")[-2:])
-            sf.write(self.enhanced_dir / f"{name}.wav", enhanced, samplerate=self.acoustic_config["sr"])
-
-
 if __name__ == '__main__':
     a = torch.rand(10, 2, 161, 200)
     print(cumulative_norm(a).shape)

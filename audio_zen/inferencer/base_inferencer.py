@@ -4,12 +4,15 @@ from pathlib import Path
 from collections import OrderedDict
 
 import librosa
+import numpy as np
+import soundfile as sf
 import toml
 import torch
 from torch.nn import functional
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
-from audio_zen.acoustic.mask import stft, istft
+from audio_zen.acoustic.utils import stft, istft, mc_stft
 from audio_zen.utils import initialize_module, prepare_device, prepare_empty_dir
 
 
@@ -28,15 +31,21 @@ class BaseInferencer:
         self.enhanced_dir = root_dir / f"enhanced_{str(epoch).zfill(4)}"
         prepare_empty_dir([self.enhanced_dir])
 
+        # Acoustics
         self.acoustic_config = config["acoustic"]
-        n_fft = self.acoustic_config["n_fft"]
-        hop_length = self.acoustic_config["hop_length"]
-        win_length = self.acoustic_config["win_length"]
 
-        self.stft = partial(stft, n_fft=n_fft, hop_length=hop_length, win_length=win_length, device=self.device)
-        self.istft = partial(istft, n_fft=n_fft, hop_length=hop_length, win_length=win_length, device=self.device)
-        self.librosa_stft = partial(librosa.stft, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
-        self.librosa_istft = partial(librosa.istft, hop_length=hop_length, win_length=win_length)
+        # Supported STFT
+        self.n_fft = self.acoustic_config["n_fft"]
+        self.hop_length = self.acoustic_config["hop_length"]
+        self.win_length = self.acoustic_config["win_length"]
+        self.sr = self.acoustic_config["sr"]
+
+        # See utils_backup.py
+        self.torch_stft = partial(stft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length)
+        self.torch_istft = partial(istft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length)
+        self.torch_mc_stft = partial(mc_stft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length)
+        self.librosa_stft = partial(librosa.stft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length)
+        self.librosa_istft = partial(librosa.istft, hop_length=self.hop_length, win_length=self.win_length)
 
         print("Configurations are as follows: ")
         print(toml.dumps(config))
@@ -57,6 +66,7 @@ class BaseInferencer:
     def _unfold(input, pad_mode, n_neighbor):
         """
         沿着频率轴，将语谱图划分为多个 overlap 的子频带
+
         Args:
             input: [B, C, F, T]
 
@@ -85,16 +95,50 @@ class BaseInferencer:
         epoch = model_checkpoint["epoch"]
         print(f"当前正在处理 tar 格式的模型断点，其 epoch 为：{epoch}.")
 
-        new_state_dict = OrderedDict()
-        for k, v in model_static_dict.items():
-            name = k[7:]  # remove `module.`
-            new_state_dict[name] = v
-            
-        # load params
-        model.load_state_dict(new_state_dict)
+        model.load_state_dict(model_static_dict)
         model.to(device)
         model.eval()
         return model, model_checkpoint["epoch"]
 
-    def inference(self):
-        raise NotImplementedError
+    @torch.no_grad()
+    def multi_channel_mag_to_mag(self, noisy, inference_args=None):
+        """
+        模型的输入为带噪语音的 **幅度谱**，输出同样为 **幅度谱**
+        """
+        mixture_stft_coefficients = self.torch_mc_stft(noisy)
+        mixture_mag = (mixture_stft_coefficients.real ** 2 + mixture_stft_coefficients.imag ** 2) ** 0.5
+
+        enhanced_mag = self.model(mixture_mag)
+
+        # Phase of the reference channel
+        reference_channel_stft_coefficients = mixture_stft_coefficients[:, 0, ...]
+        noisy_phase = torch.atan2(reference_channel_stft_coefficients.imag, reference_channel_stft_coefficients.real)
+        complex_tensor = torch.stack([(enhanced_mag * torch.cos(noisy_phase)), (enhanced_mag * torch.sin(noisy_phase))], dim=-1)
+        enhanced = self.torch_istft(complex_tensor, length=noisy.shape[-1])
+
+        enhanced = enhanced.detach().squeeze(0).cpu().numpy()
+
+        return enhanced
+
+    @torch.no_grad()
+    def __call__(self):
+        inference_type = self.inference_config["type"]
+        assert inference_type in dir(self), f"Not implemented Inferencer type: {inference_type}"
+
+        inference_args = self.inference_config["args"]
+
+        for noisy, _, name in tqdm(self.dataloader, desc="Inference"):
+            assert len(name) == 1, "The batch size of inference stage must 1."
+            name = name[0]
+
+            enhanced = getattr(self, inference_type)(noisy.to(self.device), name, inference_args)
+
+            if abs(enhanced).any() > 1:
+                print(f"Warning: enhanced is not in the range [-1, 1], {name}")
+
+            amp = np.iinfo(np.int16).max
+            enhanced = np.int16(0.8 * amp * enhanced / np.max(np.abs(enhanced)))
+
+            # clnsp102_traffic_248091_3_snr0_tl-21_fileid_268 => clean_fileid_0
+            # name = "clean_" + "_".join(name.split("_")[-2:])
+            sf.write(self.enhanced_dir / f"{name}.wav", enhanced, samplerate=self.acoustic_config["sr"])

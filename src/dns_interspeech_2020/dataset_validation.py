@@ -52,7 +52,7 @@ class Dataset(BaseDataset):
         """
         noisy_file_path = self.noisy_files_list[item]
         parent_dir = Path(noisy_file_path).parents[1].name
-        noisy_filename = basename(noisy_file_path)
+        noisy_filename, _ = basename(noisy_file_path)
 
         reverb_remark = ""  # When the speech comes from reverb_dir, insert "with_reverb" before the filename
 
