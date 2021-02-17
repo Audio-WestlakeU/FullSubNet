@@ -17,33 +17,21 @@ Git repository is the ICASSP 2021 Dataset. You need to check out the default bra
 You can use the default training configuration:
 
 ```shell
-# Use default config and two GPUs to train the FullSubNet model
-CUDA_VISABLE_DEVICES=0,1 python train.py -C config/train/fullsubnet_baseline.toml -W 2
+cd FullSubNet/src/dns_interspeech_2020
 
-# Use default config and three GPUs to train the Fullband baseline model
-CUDA_VISABLE_DEVICES=0,1 python train.py -C config/train/fullband_baseline.toml -W 3
+# Use default config and two GPUs to train the FullSubNet model
+CUDA_VISIABLE_DEVICES=0,1 python train.py -C fullsubnet/train.toml -N 2
+
+# Use default config and one GPU to train the Fullband baseline model
+CUDA_VISIABLE_DEVICES=0 python train.py -C fullband_baseline/train.toml -N 1
 
 # Resume the experiment
-CUDA_VISABLE_DEVICES=0,1 python train.py -C config/train/fullsubnet_baseline.toml -W 2 -R
+CUDA_VISIABLE_DEVICES=0,1 python train.py -C fullband_baseline/train.toml -W 2 -R
 ```
 
 ### Inference
 
-When you finish the training, you can enhance the noisy speech, e.g.:
-
-```shell
-# Inference for the FullSubNet model using the best checkpoint in all training epochs.
-python inferencer.py \
-  -C config/inference/fullsubnet.toml \
-  -M ~/Experiments/FullSubNet/fullsubnet_baseline/checkpoints/best_model.tar \
-  -O ~/Enhancement/fullsubnet_dns_interspeech_no_reverb
-  
-# Inference for the Fullband Baseline model
-python inferencer.py \
-  -C config/inference/fullband_baseline.toml \
-  -M ~/Experiments/FullSubNet/fullband_baseline/checkpoints/best_model.tar \
-  -O ~/Enhancement/fullband_dns_interspeech_no_reverb
-```
+TODO
 
 ### Apply a Pre-Trained Model
 

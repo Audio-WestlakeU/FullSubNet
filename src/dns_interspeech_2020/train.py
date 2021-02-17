@@ -12,8 +12,9 @@ import torch.multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader
 
-from audio_zen.utils import initialize_module, merge_config
+sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..")))
 import audio_zen.loss as loss
+from audio_zen.utils import initialize_module
 
 
 def entry(rank, world_size, config, resume):
@@ -25,7 +26,7 @@ def entry(rank, world_size, config, resume):
     os.environ["MASTER_ADDR"] = "localhost"
     s = socket()
     s.bind(("", 0))
-    os.environ["MASTER_PORT"] = s.getsockname()[1]  # A random local port
+    os.environ["MASTER_PORT"] = "1111"  # A random local port
 
     # Initialize the process group
     dist.init_process_group("gloo", rank=rank, world_size=world_size)
@@ -96,5 +97,5 @@ if __name__ == '__main__':
     # Find more information about DistributedDataParallel (DDP) in https://pytorch.org/tutorials/intermediate/ddp_tutorial.html.
     mp.spawn(entry,
              args=(args.num_gpus, configuration, args.resume),
-             nprocs=args.world_size,
+             nprocs=args.num_gpus,
              join=True)

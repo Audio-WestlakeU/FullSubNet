@@ -46,8 +46,8 @@ class BaseTrainer:
         n_fft = self.acoustic_config["n_fft"]
         hop_length = self.acoustic_config["hop_length"]
         win_length = self.acoustic_config["win_length"]
-        self.torch_stft = partial(stft, n_fft=n_fft, hop_length=hop_length, win_length=win_length, return_complex=True, device=self.rank)
-        self.torch_istft = partial(istft, n_fft=n_fft, hop_length=hop_length, win_length=win_length, return_complex=True, device=self.rank)
+        self.torch_stft = partial(stft, n_fft=n_fft, hop_length=hop_length, win_length=win_length, device=self.rank)
+        self.torch_istft = partial(istft, n_fft=n_fft, hop_length=hop_length, win_length=win_length, device=self.rank)
         self.librosa_stft = partial(librosa.stft, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
         self.librosa_istft = partial(librosa.istft, hop_length=hop_length, win_length=win_length)
 
