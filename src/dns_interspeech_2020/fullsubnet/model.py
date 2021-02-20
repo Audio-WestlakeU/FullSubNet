@@ -1,145 +1,115 @@
 import torch
 from torch.nn import functional
 
+from audio_zen.acoustic.feature import drop_sub_band
 from audio_zen.model.base_model import BaseModel
-from model.module.sequence import SequenceModel
-from audio_zen.acoustic.mask import drop_sub_band
+from audio_zen.model.module.sequence_model import SequenceModel
 
 
 class Model(BaseModel):
     def __init__(self,
-                 n_freqs,
-                 n_neighbor,
+                 num_freqs,
+                 subband_num_neighbors,
+                 fullband_num_neighbors,
                  look_ahead,
                  sequence_model,
-                 fband_output_activate_function,
-                 sband_output_activate_function,
-                 fband_model_hidden_size,
-                 sband_model_hidden_size,
-                 bidirectional=False,
+                 fullband_output_activate_function,
+                 subband_output_activate_function,
+                 fullband_model_hidden_size,
+                 subband_model_hidden_size,
+                 norm_type="offline_laplace_norm",
                  weight_init=True,
-                 num_sub_batches=3,
-                 use_offline_norm=True,
-                 use_cumulative_norm=False,
-                 use_forgetting_norm=False,
-                 use_hybrid_norm=False,
-                 ):
+                 num_sub_batches=3):
         """
-        FullSubNet model
-
-        Input: [B, 1, F, T]
-        Output: [B, 2, F, T]
+        FullSubNet model (cIRM Model)
 
         Args:
-            n_freqs: Frequency dim of the input
-            n_neighbor: Number of the neighbor frequencies in each side
+            num_freqs: Frequency dim of the input
+            subband_num_neighbors: Number of the neighbor frequencies in each side
+            fullband_num_neighbors:
             look_ahead: Number of use of the future frames
             sequence_model: Chose one sequence model as the basic model (GRU, LSTM)
         """
         super().__init__()
         assert sequence_model in ("GRU", "LSTM"), f"{self.__class__.__name__} only support GRU and LSTM."
 
-        self.fband_model = SequenceModel(
-            input_size=n_freqs,
-            output_size=n_freqs,
-            hidden_size=fband_model_hidden_size,
+        self.fullband_model = SequenceModel(
+            input_size=num_freqs,
+            output_size=num_freqs,
+            hidden_size=fullband_model_hidden_size,
             num_layers=2,
-            bidirectional=bidirectional,
+            bidirectional=False,
             sequence_model=sequence_model,
-            output_activate_function=fband_output_activate_function
+            output_activate_function=fullband_output_activate_function
         )
 
-        self.sband_model = SequenceModel(
-            input_size=(n_neighbor * 2 + 1) + 1 + 2,
+        self.subband_model = SequenceModel(
+            input_size=(subband_num_neighbors * 2 + 1) + 1 + 2,
             output_size=2,
-            hidden_size=sband_model_hidden_size,
+            hidden_size=subband_model_hidden_size,
             num_layers=2,
-            bidirectional=bidirectional,
+            bidirectional=False,
             sequence_model=sequence_model,
-            output_activate_function=sband_output_activate_function
+            output_activate_function=subband_output_activate_function
         )
 
-        self.n_neighbor = n_neighbor
+        self.subband_num_neighbor = subband_num_neighbors
+        self.fullband_num_neighbors = fullband_num_neighbors
         self.look_ahead = look_ahead
-        self.use_offline_norm = use_offline_norm
-        self.use_cumulative_norm = use_cumulative_norm
-        self.use_forgetting_norm = use_forgetting_norm
-        self.use_hybrid_norm = use_hybrid_norm
+        self.norm = self.norm_wrapper(norm_type)
         self.num_sub_batches = num_sub_batches
-
-        assert (use_hybrid_norm + use_forgetting_norm + use_cumulative_norm + use_offline_norm) == 1, \
-            "Only Supports one Norm method."
 
         if weight_init:
             self.apply(self.weight_init)
 
-    def forward(self, input):
+    def forward(self, noisy_mag):
         """
         Args:
-            input: [B, 1, F, T]
+            noisy_mag: [B, 1, F, T], noisy magnitude spectrogram
 
         Returns:
-            [B, 2, F, T]
+            [B, 2, F, T], the real part and imag part of the enhanced spectrogram
         """
-        assert input.dim() == 4
-        # Pad look ahead
-        input = functional.pad(input, [0, self.look_ahead])
-        batch_size, n_channels, n_freqs, n_frames = input.size()
-        assert n_channels == 1, f"{self.__class__.__name__} takes mag feature as inputs."
+        assert noisy_mag.dim() == 4
+        noisy_mag = functional.pad(noisy_mag, [0, self.look_ahead])  # Pad look ahead
+        batch_size, num_channels, num_freqs, num_frames = noisy_mag.size()
+        assert num_channels == 1, f"{self.__class__.__name__} takes the mag feature as inputs."
 
-        """=== === === Full-Band sub Model === === ==="""
-        if self.use_offline_norm:
-            fband_mu = torch.mean(input, dim=(1, 2, 3)).reshape(batch_size, 1, 1, 1)  # 语谱图算一个均值
-            fband_input = input / (fband_mu + 1e-10)
-        elif self.use_cumulative_norm:
-            fband_input = self.cumulative_norm(input)
-        elif self.use_forgetting_norm:
-            fband_input = self.forgetting_norm(input.reshape(batch_size, n_channels * n_freqs, n_frames), 192)
-            fband_input.reshape(batch_size, n_channels, n_freqs, n_frames)
-        elif self.use_hybrid_norm:
-            fband_input = self.hybrid_norm(input.reshape(batch_size, n_channels * n_freqs, n_frames), 192)
-            fband_input.reshape(batch_size, n_channels, n_freqs, n_frames)
+        # Fullband
+        fullband_input = self.norm(noisy_mag).reshape(batch_size, num_channels * num_freqs, num_frames)
+        fullband_output = self.fullband_model(fullband_input).reshape(batch_size, 1, num_freqs, num_frames)
+
+        if self.fullband_num_neighbors == 0:
+            fullband_output_unfolded = fullband_output.permute(0, 2, 1, 3)
+            fullband_output_unfolded = fullband_output_unfolded.reshape(batch_size * num_freqs, 1, num_frames)
         else:
-            raise NotImplementedError("You must set up a type of Norm. E.g., offline_norm, cumulative_norm, forgetting_norm.")
+            # unfold, [B, N=F, C, F_f, T]
+            fullband_output_unfolded = self.unfold(fullband_output, n_neighbor=self.fullband_num_neighbors)
+            fullband_output_unfolded = fullband_output_unfolded.reshape(batch_size * num_freqs, self.fullband_num_neighbors * 2 + 1, num_frames)
 
-        # [B, 1, F, T] => [B, F, T] => [B, 1, F, T]
-        fband_input = fband_input.reshape(batch_size, n_channels * n_freqs, n_frames)
-        fband_output = self.fband_model(fband_input)
-        fband_output = fband_output.reshape(batch_size, n_channels, n_freqs, n_frames)
+        # unfold, [B, N=F, C, F_s, T]
+        noisy_mag_unfolded = self.unfold(noisy_mag, n_neighbor=self.subband_num_neighbor)
+        noisy_mag_unfolded = noisy_mag_unfolded.reshape(batch_size * num_freqs, self.subband_num_neighbor * 2 + 1, num_frames)
 
-        """=== === === Sub-Band sub Model === === ==="""
-        # [B, 1, F, T] => unfold => [B, N=F, C, F_s, T] => [B * N, F_s, T]
-        input_unfolded = self.unfold(input, n_neighbor=self.n_neighbor)
-        fband_output_unfolded = self.unfold(fband_output, n_neighbor=1)
-
-        input_unfolded = input_unfolded.reshape(batch_size * n_freqs, self.n_neighbor * 2 + 1, n_frames)
-        fband_output_unfolded = fband_output_unfolded.reshape(batch_size * n_freqs, 2 + 1, n_frames)
-
-        # [B * F, (F_s + 3), T]
-        sband_input = torch.cat([input_unfolded, fband_output_unfolded], dim=1)
-
-        if self.use_offline_norm:
-            sband_mu = torch.mean(sband_input, dim=(1, 2)).reshape(batch_size * n_freqs, 1, 1)
-            sband_input = sband_input / (sband_mu + 1e-10)
-        elif self.use_cumulative_norm:
-            sband_input = self.cumulative_norm(sband_input)
-        elif self.use_forgetting_norm:
-            sband_input = self.forgetting_norm(sband_input, 192)
-        elif self.use_hybrid_norm:
-            sband_input = self.hybrid_norm(sband_input, 192)
-        else:
-            raise NotImplementedError("You must set up a type of Norm. E.g., offline_norm, cumulative_norm, forgetting_norm.")
+        # concat, [B * F, (F_s + F_f), T]
+        subband_input = torch.cat([noisy_mag_unfolded, fullband_output_unfolded], dim=1)
+        subband_input = self.norm(subband_input)
 
         # Speed up training without significant performance degradation
         # This part of the content will be updated in the paper later
         if batch_size > 1:
-            sband_input = sband_input.reshape(batch_size, n_freqs, self.n_neighbor * 2 + 1 + 2 + 1, n_frames)
-            sband_input = drop_sub_band(sband_input.permute(0, 2, 1, 3), num_sub_batches=self.num_sub_batches)
-            n_freqs = sband_input.shape[2]
-            sband_input = sband_input.permute(0, 2, 1, 3).reshape(-1, self.n_neighbor * 2 + 1 + 2 + 1, n_frames)
+            subband_input = subband_input.reshape(
+                batch_size,
+                num_freqs,
+                self.subband_num_neighbor * 2 + 1 + self.fullband_num_neighbors * 2 + 1,
+                num_frames
+            )
+            subband_input = drop_sub_band(subband_input.permute(0, 2, 1, 3), num_sub_batches=self.num_sub_batches)
+            n_freqs = subband_input.shape[2]
+            subband_input = subband_input.permute(0, 2, 1, 3).reshape(-1, self.subband_num_neighbor * 2 + 1 + 1, num_frames)
 
         # [B * F, (F_s + 1), T] => [B * F, 2, T] => [B, F, 2, T]
-        sband_mask = self.sband_model(sband_input)
+        sband_mask = self.subband_model(subband_input)
         sband_mask = sband_mask.reshape(batch_size, n_freqs, 2, n_frames).permute(0, 2, 1, 3).contiguous()
 
         output = sband_mask[:, :, :, self.look_ahead:]
@@ -151,14 +121,14 @@ if __name__ == "__main__":
 
     with torch.no_grad():
         model = Model(
-            n_neighbor=15,
-            n_freqs=257,
+            subband_num_neighbors=15,
+            num_freqs=257,
             look_ahead=2,
             sequence_model="LSTM",
-            fband_output_activate_function="ReLU",
-            sband_output_activate_function=None,
-            fband_model_hidden_size=512,
-            sband_model_hidden_size=384,
+            fullband_output_activate_function="ReLU",
+            subband_output_activate_function=None,
+            fullband_model_hidden_size=512,
+            subband_model_hidden_size=384,
             use_offline_norm=True,
             weight_init=False,
             use_cumulative_norm=False,

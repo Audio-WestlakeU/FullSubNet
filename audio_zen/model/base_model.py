@@ -13,25 +13,28 @@ class BaseModel(nn.Module):
     def unfold(input, n_neighbor):
         """
         沿着频率轴，将语谱图划分为多个 overlap 的子频带
+
         Args:
-            n_neighbor:
             input: [B, 1, F, T]
+            n_neighbor:
 
         Returns:
             [B, N, C, F_s, T], F 为子频带的频率轴大小, e.g. [2, 161, 1, 19, 200]
         """
-        assert input.dim() == 4, f"The dim of input is {input.dim()}, which should be 4."
-        batch_size, n_channels, n_freqs, n_frames = input.size()
-        output = input.reshape(batch_size * n_channels, 1, n_freqs, n_frames)
+        assert input.dim() == 4, f"The dim of input is {input.dim()}, which should be four."
+        batch_size, num_channels, num_freqs, num_frames = input.size()
+        output = input.reshape(batch_size * num_channels, 1, num_freqs, num_frames)
         sub_band_n_freqs = n_neighbor * 2 + 1
 
+        # Pad of the top and bottom
         output = functional.pad(output, [0, 0, n_neighbor, n_neighbor], mode="reflect")
-        output = functional.unfold(output, (sub_band_n_freqs, n_frames))
-        assert output.shape[-1] == n_freqs, f"n_freqs != N (sub_band), {n_freqs} != {output.shape[-1]}"
+
+        output = functional.unfold(output, (sub_band_n_freqs, num_frames))
+        assert output.shape[-1] == num_freqs, f"n_freqs != N (sub_band), {num_freqs} != {output.shape[-1]}"
 
         # 拆分 unfold 中间的维度
-        output = output.reshape(batch_size, n_channels, sub_band_n_freqs, n_frames, n_freqs)
-        output = output.permute(0, 4, 1, 2, 3).contiguous()  # permute 本质上与  reshape 可是不同的 ...，得到的维度相同，但 entity 不同啊
+        output = output.reshape(batch_size, num_channels, sub_band_n_freqs, num_frames, num_freqs)
+        output = output.permute(0, 4, 1, 2, 3).contiguous()
         return output
 
     @staticmethod

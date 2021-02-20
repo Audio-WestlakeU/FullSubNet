@@ -226,7 +226,7 @@ def activity_detector(audio, fs=16000, activity_threshold=0.13, target_level=-25
 
 def drop_sub_band(input, num_sub_batches=3):
     """
-    To reduce the computational complexity of the sub_band sub model in the FullSubNet model.
+    Reduce computational complexity of the sub_band sub model in the FullSubNet model.
 
     Args:
         input: [B, C, F, T]
