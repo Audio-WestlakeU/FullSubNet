@@ -88,7 +88,7 @@ if __name__ == '__main__':
     configuration["meta"]["config_path"] = args.configuration
     configuration["meta"]["preloaded_model_path"] = args.preloaded_model_path
 
-    # Expand python search path to "src"
+    # Expand python search path to "recipes"
     # sys.path.append(os.path.join(os.getcwd(), ".."))
 
     # One training job is corresponding to one group (world).

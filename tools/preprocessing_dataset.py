@@ -6,7 +6,7 @@ from pathlib import Path
 import librosa
 from tqdm import tqdm
 
-sys.path.append(os.path.join(os.getcwd(), "src"))
+sys.path.append(os.path.join(os.getcwd(), "recipes"))
 from audio_zen.acoustic.mask import is_clipped, load_wav, activity_detector
 
 candidate_datasets = [

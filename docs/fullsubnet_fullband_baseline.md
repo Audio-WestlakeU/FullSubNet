@@ -17,7 +17,7 @@ Git repository is the ICASSP 2021 Dataset. You need to check out the default bra
 You can use the default training configuration:
 
 ```shell
-cd FullSubNet/src/dns_interspeech_2020
+cd FullSubNet/recipes/dns_interspeech_2020
 
 # Use default config and two GPUs to train the FullSubNet model
 CUDA_VISIABLE_DEVICES=0,1 python train.py -C fullsubnet/train.toml -N 2

@@ -1,5 +1,5 @@
 [meta]
-save_dir = "~/Experiments/FullSubNet"
+save_dir = "~/Experiments/FullSubNet/Fullband_Baseline"
 description = "This is a description of FullSubNet experiment."
 seed = 0
 keep_reproducibility = false
@@ -13,7 +13,7 @@ win_length = 512
 sr = 16000
 
 
-[loss_function]  # 这里的逻辑稍有区别
+[loss_function]
 name = "mse_loss"
 [loss_function.args]
 
