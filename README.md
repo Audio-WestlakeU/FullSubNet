@@ -5,10 +5,10 @@
 ![Pytorch Version](https://img.shields.io/badge/PyTorch-%3E%3D1.7-brightgreen)
 ![GitHub repo size](https://img.shields.io/github/repo-size/haoxiangsnr/FullSubNet)
 
-This Git repository for the official PyTorch implementation of ["A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement"](https://arxiv.org/abs/2010.15508), submitted to ICASSP
+This Git repository for the official PyTorch implementation of ["A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement"](https://arxiv.org/abs/2010.15508), accepted to ICASSP
 2021.
 
-:blossom: See the demo page in [this link](https://www.haoxiangsnr.com/demo/fullsubnet/).
+:bulb:[[Demo\]](https://www.haoxiangsnr.com/demo/fullsubnet/) | :page_facing_up:[[PDF\]](https://arxiv.org/abs/2010.15508)
 
 <p align="center">
   <img width="460" src="docs/workflow.png" alt="workflow">
@@ -21,7 +21,7 @@ You can use all of these things:
 - Available models
     - [x] FullSubNet
     - [ ] Delayed Sub-Band LSTM
-    - [x] Fullband LSTM Baseline
+    - [x] Fullband Baseline
 - Available Datasets
     - [x] Deep Noise Suppression Challenge - INTERSPEECH 2020
     - [ ] Demand + CSTR VCTK Corpus
@@ -29,8 +29,7 @@ You can use all of these things:
 ## Documentation
 
 - [Prerequisites](docs/prerequisites.md)
-- Getting Started
-  - [FullSubNet & Fullband Baseline](docs/fullsubnet_fullband_baseline.md)
+- [Getting Started](docs/getting_started.md)
 
 ## Citation
 
