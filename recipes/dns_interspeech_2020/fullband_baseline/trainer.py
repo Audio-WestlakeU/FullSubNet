@@ -49,7 +49,6 @@ class Trainer(BaseTrainer):
         if self.rank == 0:
             self.writer.add_scalar(f"Loss/Train", loss_total / len(self.train_dataloader), epoch)
 
-    # TODO 修改验证部分，看能不能和其他代码整合在一起，放在 trainer 中
     @torch.no_grad()
     def _validation_epoch(self, epoch):
         visualization_n_samples = self.visualization_config["n_samples"]

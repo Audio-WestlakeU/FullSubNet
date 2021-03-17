@@ -109,8 +109,8 @@ class Model(BaseModel):
 
         """=== === === Sub-Band sub Model === === ==="""
         # [B, 1, F, T] => unfold => [B, N=F, C, F_s, T] => [B * N, F_s, T]
-        input_unfolded = self.unfold(input, n_neighbor=self.n_neighbor)
-        fband_output_unfolded = self.unfold(fband_output, n_neighbor=1)
+        input_unfolded = self.unfold(input, num_neighbor=self.n_neighbor)
+        fband_output_unfolded = self.unfold(fband_output, num_neighbor=1)
 
         input_unfolded = input_unfolded.reshape(batch_size * n_freqs, self.n_neighbor * 2 + 1, n_frames)
         fband_output_unfolded = fband_output_unfolded.reshape(batch_size * n_freqs, 2 + 1, n_frames)

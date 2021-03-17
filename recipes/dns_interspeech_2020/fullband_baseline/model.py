@@ -40,7 +40,7 @@ class Model(BaseModel):
         self.look_ahead = look_ahead
         self.norm = self.norm_wrapper(norm_type)
         if weight_init:
-            print("Initializing Model...")
+            print("Initializing model...")
             self.apply(self.weight_init)
 
     def forward(self, noisy_mag):
