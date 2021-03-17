@@ -20,8 +20,8 @@ You can use all of these things:
 
 - Available models
     - [x] FullSubNet
-    - [x] Delayed Sub-Band LSTM
-    - [x] Fullband LSTM Baseline
+    - [ ] Delayed Sub-Band LSTM
+    - [x] Fullband Baseline
 - Available Datasets
     - [x] Deep Noise Suppression Challenge - INTERSPEECH 2020
     - [ ] Demand + CSTR VCTK Corpus
@@ -29,8 +29,7 @@ You can use all of these things:
 ## Documentation
 
 - [Prerequisites](docs/prerequisites.md)
-- Getting Started
-  - [FullSubNet & Fullband Baseline](docs/fullsubnet_fullband_baseline.md)
+- [Getting Started](docs/getting_started.md)
 
 ## Citation
 
