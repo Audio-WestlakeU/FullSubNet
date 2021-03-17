@@ -224,45 +224,40 @@ def activity_detector(audio, fs=16000, activity_threshold=0.13, target_level=-25
     return perc_active
 
 
-def drop_sub_band(input, num_sub_batches=3):
+def drop_band(input, num_groups=2):
     """
-    Reduce computational complexity of the sub_band sub model in the FullSubNet model.
+    Reduce computational complexity of the subband part in the FullSubNet model.
 
-    Args:
+    Shapes:
         input: [B, C, F, T]
-        num_sub_batches:
-
-    Notes:
-        'batch_size' of the input should be divisible by the value of 'num_sub_batch'.
-        If not, the frequencies corresponding to the last sub batch will not be well-trained.
-
-    Returns:
-        [B, C, F // num_sub_batches, T]
+        return: [B, C, F // num_groups, T]
     """
-    if num_sub_batches < 2:
+    batch_size, _, num_freqs, _ = input.shape
+    assert batch_size > num_groups, f"Batch size = {batch_size}, num_groups = {num_groups}. The batch size should larger than the num_groups."
+
+    if num_groups <= 1:
+        # No demand for grouping
         return input
 
-    batch_size, _, n_freqs, _ = input.shape
-    sub_batch_size = batch_size // num_sub_batches
-    reminder = n_freqs % num_sub_batches
+    # Each sample must has the same number of the frequencies for parallel training.
+    # Therefore, we need to drop those remaining frequencies in the high frequency part.
+    if num_freqs % num_groups != 0:
+        input = input[..., :(num_freqs - (num_freqs % num_groups)), :]
+        num_freqs = input.shape[2]
 
     output = []
-    for idx in range(num_sub_batches):
-        batch_indices = torch.arange(idx * sub_batch_size, (idx + 1) * sub_batch_size, device=input.device)
-        freq_indices = torch.arange(
-            idx + (reminder // 2),
-            n_freqs - (reminder - reminder // 2),
-            step=num_sub_batches,
-            device=input.device
-        )
+    for group_idx in range(num_groups):
+        samples_indices = torch.arange(group_idx, batch_size, num_groups, device=input.device)
+        freqs_indices = torch.arange(group_idx, num_freqs, num_groups, device=input.device)
 
-        selected_sub_batch = torch.index_select(input, dim=0, index=batch_indices)
-        selected_freqs = torch.index_select(selected_sub_batch, dim=2, index=freq_indices)
-        output.append(selected_freqs)
+        selected_samples = torch.index_select(input, dim=0, index=samples_indices)
+        selected = torch.index_select(selected_samples, dim=2, index=freqs_indices)  # [B, C, F // num_groups, T]
+
+        output.append(selected)
 
     return torch.cat(output, dim=0)
 
 
 if __name__ == '__main__':
     ipt = torch.rand(70, 1, 257, 200)
-    print(drop_sub_band(ipt, 1).shape)
+    print(drop_band(ipt, 8).shape)

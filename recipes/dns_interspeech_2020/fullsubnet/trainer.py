@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 from audio_zen.trainer.base_trainer import BaseTrainer
 from audio_zen.acoustic.mask import build_complex_ideal_ratio_mask, decompress_cIRM
-from audio_zen.acoustic.feature import mag_phase
+from audio_zen.acoustic.feature import mag_phase, drop_band
 
 plt.switch_backend('agg')
 
@@ -30,9 +30,9 @@ class Trainer(BaseTrainer):
 
             noisy_mag, _ = mag_phase(noisy_complex)
             ground_truth_cIRM = build_complex_ideal_ratio_mask(noisy_complex, clean_complex)  # [B, F, T, 2]
-            ground_truth_cIRM = drop_sub_band(
+            ground_truth_cIRM = drop_band(
                 ground_truth_cIRM.permute(0, 3, 1, 2),  # [B, 2, F ,T]
-                self.model.module.num_sub_batches
+                self.model.module.num_groups_in_drop_band
             ).permute(0, 2, 3, 1)
 
             with autocast(enabled=self.use_amp):
@@ -40,7 +40,7 @@ class Trainer(BaseTrainer):
                 noisy_mag = noisy_mag.unsqueeze(1)
                 cRM = self.model(noisy_mag)
                 cRM = cRM.permute(0, 2, 3, 1)
-                loss = self.loss_function(cIRM, cRM)
+                loss = self.loss_function(ground_truth_cIRM, cRM)
 
             self.scaler.scale(loss).backward()
             self.scaler.unscale_(self.optimizer)

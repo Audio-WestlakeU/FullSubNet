@@ -7,10 +7,10 @@ use_amp = false
 
 
 [acoustic]
-hop_length = 256
 n_fft = 512
 win_length = 512
 sr = 16000
+hop_length = 256
 
 
 [loss_function]
@@ -49,7 +49,7 @@ target_dB_FS = -25
 target_dB_FS_floating_value = 10
 
 [train_dataset.dataloader]
-batch_size = 320
+batch_size = 100
 num_workers = 40
 drop_last = true
 pin_memory = true
@@ -58,7 +58,6 @@ shuffle = true
 
 [validation_dataset]
 path = "dataset_validation.Dataset"
-
 [validation_dataset.args]
 dataset_dir_list = [
     "~/Datasets/DNS-INTERSPEECH-2020/datasets/test_set/synthetic/with_reverb/",
@@ -69,7 +68,6 @@ sr = 16000
 
 [model]
 path = "fullband_baseline.model.Model"
-
 [model.args]
 num_freqs = 257
 hidden_size = 512
@@ -82,16 +80,13 @@ weight_init = true
 
 [trainer]
 path = "fullband_baseline.trainer.Trainer"
-
 [trainer.train]
 clip_grad_norm_value = 10
 epochs = 9999
 save_checkpoint_interval = 1
-
 [trainer.validation]
 save_max_metric_score = true
 validation_interval = 1
-
 [trainer.visualization]
 metrics = ["WB_PESQ", "NB_PESQ", "STOI", "SI_SDR"]
 n_samples = 10
