@@ -12,7 +12,7 @@ from torch.nn import functional
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from audio_zen.acoustic.utils import stft, istft, mc_stft
+from audio_zen.acoustics.utils import stft, istft, mc_stft
 from audio_zen.utils import initialize_module, prepare_device, prepare_empty_dir
 
 
@@ -32,7 +32,7 @@ class BaseInferencer:
         prepare_empty_dir([self.enhanced_dir])
 
         # Acoustics
-        self.acoustic_config = config["acoustic"]
+        self.acoustic_config = config["acoustics"]
 
         # Supported STFT
         self.n_fft = self.acoustic_config["n_fft"]

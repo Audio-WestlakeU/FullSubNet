@@ -4,7 +4,7 @@ import torch
 from tqdm import tqdm
 
 from audio_zen.inferencer.base_inferencer import BaseInferencer
-from audio_zen.acoustic.mask import mag_phase
+from audio_zen.acoustics.mask import mag_phase
 
 
 def cumulative_norm(input):

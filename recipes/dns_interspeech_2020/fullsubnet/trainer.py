@@ -4,8 +4,8 @@ from torch.cuda.amp import autocast
 from tqdm import tqdm
 
 from audio_zen.trainer.base_trainer import BaseTrainer
-from audio_zen.acoustic.mask import build_complex_ideal_ratio_mask, decompress_cIRM
-from audio_zen.acoustic.feature import mag_phase, drop_band
+from audio_zen.acoustics.mask import build_complex_ideal_ratio_mask, decompress_cIRM
+from audio_zen.acoustics.feature import mag_phase, drop_band
 
 plt.switch_backend('agg')
 

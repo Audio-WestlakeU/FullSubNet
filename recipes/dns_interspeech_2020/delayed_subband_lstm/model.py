@@ -3,7 +3,7 @@ from torch.nn import functional
 
 from audio_zen.model.base_model import BaseModel
 from model.module.sequence import SequenceModel
-from audio_zen.acoustic.mask import drop_sub_band
+from audio_zen.acoustics.mask import drop_sub_band
 
 
 class Model(BaseModel):

@@ -1,7 +1,7 @@
 import torch
 from torch.nn import functional
 
-from audio_zen.acoustic.feature import drop_band
+from audio_zen.acoustics.feature import drop_band
 from audio_zen.model.base_model import BaseModel
 from audio_zen.model.module.sequence_model import SequenceModel
 

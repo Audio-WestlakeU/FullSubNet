@@ -7,7 +7,7 @@ import librosa
 from tqdm import tqdm
 
 sys.path.append(os.path.join(os.getcwd(), "recipes"))
-from audio_zen.acoustic.mask import is_clipped, load_wav, activity_detector
+from audio_zen.acoustics.mask import is_clipped, load_wav, activity_detector
 
 candidate_datasets = [
     "~/Datasets/DNS-Challenge-ICASSP/datasets/clean/german_speech/CC_BY_SA_4.0_249hrs_339spk_German_Wikipedia_16k",

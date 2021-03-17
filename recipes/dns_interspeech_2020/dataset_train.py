@@ -6,7 +6,7 @@ from scipy import signal
 from tqdm import tqdm
 
 from audio_zen.dataset.base_dataset import BaseDataset
-from audio_zen.acoustic.feature import norm_amplitude, tailor_dB_FS, is_clipped, load_wav, subsample
+from audio_zen.acoustics.feature import norm_amplitude, tailor_dB_FS, is_clipped, load_wav, subsample
 from audio_zen.utils import expand_path
 
 
@@ -52,7 +52,7 @@ class Dataset(BaseDataset):
             sr:
         """
         super().__init__()
-        # acoustic args
+        # acoustics args
         self.sr = sr
 
         # parallel args

@@ -13,8 +13,8 @@ from joblib import Parallel, delayed
 from torch.cuda.amp import GradScaler
 
 import audio_zen.metrics as metrics
-from audio_zen.acoustic.feature import stft, istft
-from audio_zen.acoustic.utils import transform_pesq_range
+from audio_zen.acoustics.feature import stft, istft
+from audio_zen.acoustics.utils import transform_pesq_range
 from audio_zen.utils import prepare_empty_dir, ExecutionTime
 
 from torch.utils.tensorboard import SummaryWriter
@@ -40,7 +40,7 @@ class BaseTrainer:
         self.scaler = GradScaler(enabled=self.use_amp)
 
         # Acoustics
-        self.acoustic_config = config["acoustic"]
+        self.acoustic_config = config["acoustics"]
 
         # Supported STFT
         n_fft = self.acoustic_config["n_fft"]

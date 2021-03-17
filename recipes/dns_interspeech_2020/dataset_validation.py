@@ -4,7 +4,7 @@ from pathlib import Path
 import librosa
 
 from audio_zen.dataset.base_dataset import BaseDataset
-from audio_zen.acoustic.utils import load_wav
+from audio_zen.acoustics.utils import load_wav
 from audio_zen.utils import basename
 
 
