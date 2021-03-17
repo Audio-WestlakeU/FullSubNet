@@ -28,14 +28,14 @@ CUDA_VISIABLE_DEVICES=0,1 python train.py -C fullsubnet/train.toml -N 2
 CUDA_VISIABLE_DEVICES=0 python train.py -C fullband_baseline/train.toml -N 1
 
 # Resume the experiment using "-R" parameter
-CUDA_VISIABLE_DEVICES=0,1 python train.py -C fullband_baseline/train.toml -W 2 -R
+CUDA_VISIABLE_DEVICES=0,1 python train.py -C fullband_baseline/train.toml -N 2 -R
 ```
 
 ### Logs and Visualization
 
 Assuming that:
 
-- the file path of the training configuration is `fullsubnet/train.toml`
+- The file path of the training configuration is `fullsubnet/train.toml`
 - In the training configuration, `save_dir = "~/Experiments/FullSubNet/FullSubNet"`
 
 The logs will be stored in the `~/Experiments/FullSubNet/FullSubNet/train` directory. This directory contains the following:

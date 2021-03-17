@@ -78,8 +78,8 @@ class Model(BaseModel):
         noisy_mag = functional.pad(noisy_mag, [0, self.look_ahead])  # Pad the look ahead
         batch_size, num_channels, num_freqs, num_frames = noisy_mag.size()
         assert num_channels == 1, f"{self.__class__.__name__} takes the mag feature as inputs."
-        if batch_size == 1:
-            assert self.num_groups_in_drop_band <= 1, "During the inference, all frequencies should be retained."
+        # if batch_size == 1:
+        #     assert self.num_groups_in_drop_band <= 1, "During the inference, all frequencies should be retained."
 
         # Fullband model
         fb_input = self.norm(noisy_mag).reshape(batch_size, num_channels * num_freqs, num_frames)
@@ -98,13 +98,14 @@ class Model(BaseModel):
         sb_input = self.norm(sb_input)
 
         # Speeding up training without significant performance degradation. These will be updated to the paper later.
-        sb_input = drop_band(sb_input.permute(0, 2, 1, 3), num_groups=self.num_groups_in_drop_band)  # [B, C, F//num_groups, T]
-        num_freqs = sb_input.shape[2]
-        sb_input = sb_input.permute(0, 2, 1, 3).reshape(
-            batch_size * num_freqs,
-            (self.sb_num_neighbors * 2 + 1) + (self.fb_num_neighbors * 2 + 1),
-            num_frames
-        )
+        if batch_size > 1:
+            sb_input = drop_band(sb_input.permute(0, 2, 1, 3), num_groups=self.num_groups_in_drop_band)  # [B, C, F//num_groups, T]
+            num_freqs = sb_input.shape[2]
+            sb_input = sb_input.permute(0, 2, 1, 3).reshape(
+                batch_size * num_freqs,
+                (self.sb_num_neighbors * 2 + 1) + (self.fb_num_neighbors * 2 + 1),
+                num_frames
+            )
 
         # [B * F, (F_s + F_f), T] => [B * F, 2, T] => [B, F, 2, T]
         sb_mask = self.sb_model(sb_input)
