@@ -6,7 +6,7 @@ keep_reproducibility = false
 use_amp = false
 
 
-[acoustic]
+[acoustics]
 n_fft = 512
 win_length = 512
 sr = 16000

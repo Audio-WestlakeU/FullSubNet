@@ -6,7 +6,7 @@ keep_reproducibility = false  # see https://pytorch.org/docs/stable/notes/random
 use_amp = false  # use automatic mixed precision, it will benefits Tensor Core-enabled GPU (e.g. Volta, Turing, Ampere). 2-3X speedup。
 
 
-[acoustic]
+[acoustics]
 n_fft = 512
 win_length = 512
 sr = 16000

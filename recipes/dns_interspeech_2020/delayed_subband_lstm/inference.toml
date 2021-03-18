@@ -1,4 +1,4 @@
-[acoustic]
+[acoustics]
 sr = 16000
 n_fft = 512
 win_length = 512
