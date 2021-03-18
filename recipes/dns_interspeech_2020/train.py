@@ -17,7 +17,7 @@ import audio_zen.loss as loss
 from audio_zen.utils import initialize_module
 
 
-def entry(rank, world_size, config, resume):
+def entry(rank, world_size, config, resume, only_validation):
     torch.manual_seed(config["meta"]["seed"])  # For both CPU and GPU
     np.random.seed(config["meta"]["seed"])
     random.seed(config["meta"]["seed"])
@@ -61,6 +61,7 @@ def entry(rank, world_size, config, resume):
         rank=rank,
         config=config,
         resume=resume,
+        only_validation=only_validation,
         model=model,
         loss_function=loss_function,
         optimizer=optimizer,
@@ -74,9 +75,10 @@ def entry(rank, world_size, config, resume):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="FullSubNet")
     parser.add_argument("-C", "--configuration", required=True, type=str, help="Configuration (*.toml).")
-    parser.add_argument("-P", "--preloaded_model_path", type=str, help="Path of the *.pth file of a model.")
     parser.add_argument("-R", "--resume", action="store_true", help="Resume the experiment from latest checkpoint.")
+    parser.add_argument("-V", "--only_validation", action="store_true", help="Only run validation. It is used for debugging validation.")
     parser.add_argument("-N", "--num_gpus", type=int, default=2, help="The number of GPUs you are using for training.")
+    parser.add_argument("-P", "--preloaded_model_path", type=str, help="Path of the *.pth file of a model.")
     args = parser.parse_args()
 
     if args.preloaded_model_path:
@@ -96,6 +98,6 @@ if __name__ == '__main__':
     # the rank is the unique ID given to a process.
     # Find more information about DistributedDataParallel (DDP) in https://pytorch.org/tutorials/intermediate/ddp_tutorial.html.
     mp.spawn(entry,
-             args=(args.num_gpus, configuration, args.resume),
+             args=(args.num_gpus, configuration, args.resume, args.only_validation),
              nprocs=args.num_gpus,
              join=True)

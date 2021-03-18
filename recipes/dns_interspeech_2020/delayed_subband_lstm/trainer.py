@@ -4,25 +4,15 @@ from torch.cuda.amp import autocast
 from tqdm import tqdm
 
 from audio_zen.trainer.base_trainer import BaseTrainer
-from audio_zen.acoustics.mask import mag_phase, build_complex_ideal_ratio_mask, drop_sub_band
+from audio_zen.acoustics.mask import build_complex_ideal_ratio_mask, decompress_cIRM
+from audio_zen.acoustics.feature import mag_phase
 
 plt.switch_backend('agg')
 
 
 class Trainer(BaseTrainer):
-    def __init__(
-            self,
-            dist,
-            rank,
-            config,
-            resume: bool,
-            model,
-            loss_function,
-            optimizer,
-            train_dataloader,
-            validation_dataloader
-    ):
-        super(Trainer, self).__init__(dist, rank, config, resume, model, loss_function, optimizer)
+    def __init__(self, dist, rank, config, resume, only_validation, model, loss_function, optimizer, train_dataloader, validation_dataloader):
+        super().__init__(dist, rank, config, resume, only_validation, model, loss_function, optimizer)
         self.train_dataloader = train_dataloader
         self.valid_dataloader = validation_dataloader
 

@@ -11,8 +11,8 @@ plt.switch_backend('agg')
 
 
 class Trainer(BaseTrainer):
-    def __init__(self, dist, rank, config, resume: bool, model, loss_function, optimizer, train_dataloader, validation_dataloader):
-        super().__init__(dist, rank, config, resume, model, loss_function, optimizer)
+    def __init__(self, dist, rank, config, resume, only_validation, model, loss_function, optimizer, train_dataloader, validation_dataloader):
+        super().__init__(dist, rank, config, resume, only_validation, model, loss_function, optimizer)
         self.train_dataloader = train_dataloader
         self.valid_dataloader = validation_dataloader
 

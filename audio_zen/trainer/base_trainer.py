@@ -23,7 +23,7 @@ plt.switch_backend('agg')
 
 
 class BaseTrainer:
-    def __init__(self, dist, rank, config, resume: bool, model, loss_function, optimizer):
+    def __init__(self, dist, rank, config, resume, only_validation, model, loss_function, optimizer):
         self.color_tool = colorful
         self.color_tool.use_style("solarized")
 
@@ -46,28 +46,29 @@ class BaseTrainer:
         n_fft = self.acoustic_config["n_fft"]
         hop_length = self.acoustic_config["hop_length"]
         win_length = self.acoustic_config["win_length"]
+
         self.torch_stft = partial(stft, n_fft=n_fft, hop_length=hop_length, win_length=win_length, device=self.rank)
         self.torch_istft = partial(istft, n_fft=n_fft, hop_length=hop_length, win_length=win_length, device=self.rank)
         self.librosa_stft = partial(librosa.stft, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
         self.librosa_istft = partial(librosa.istft, hop_length=hop_length, win_length=win_length)
 
-        # Trainer.train in config
+        # Trainer.train in the config
         self.train_config = config["trainer"]["train"]
         self.epochs = self.train_config["epochs"]
         self.save_checkpoint_interval = self.train_config["save_checkpoint_interval"]
         self.clip_grad_norm_value = self.train_config["clip_grad_norm_value"]
-        assert self.save_checkpoint_interval >= 1
+        assert self.save_checkpoint_interval >= 1, "Check the 'save_checkpoint_interval' parameter in the config. It should be large than one."
 
-        # Trainer.validation in config
+        # Trainer.validation in the config
         self.validation_config = config["trainer"]["validation"]
         self.validation_interval = self.validation_config["validation_interval"]
         self.save_max_metric_score = self.validation_config["save_max_metric_score"]
-        assert self.validation_interval >= 1
+        assert self.validation_interval >= 1, "Check the 'validation_interval' parameter in the config. It should be large than one."
 
-        # Trainer.visualization in config
+        # Trainer.visualization in the config
         self.visualization_config = config["trainer"]["visualization"]
 
-        # In the 'train.py' file, if the 'resume' item is True, we will update the following args:
+        # In the 'train.py' file, if the 'resume' item is 'True', we will update the following args:
         self.start_epoch = 1
         self.best_score = -np.inf if self.save_max_metric_score else np.inf
         self.save_dir = Path(config["meta"]["save_dir"]).expanduser().absolute() / config["meta"]["experiment_name"]
@@ -76,6 +77,9 @@ class BaseTrainer:
 
         if resume:
             self._resume_checkpoint()
+
+        # Debug validation, which skips training
+        self.only_validation = only_validation
 
         if config["meta"]["preloaded_model_path"]:
             self._preload_model(Path(config["preloaded_model_path"]))
@@ -119,7 +123,7 @@ class BaseTrainer:
 
     def _resume_checkpoint(self):
         """
-        Resume experiment from the latest checkpoint.
+        Resume the experiment from the latest checkpoint.
         """
         latest_model_path = self.checkpoints_dir.expanduser().absolute() / "latest_model.tar"
         assert latest_model_path.exists(), f"{latest_model_path} does not exist, can not load latest checkpoint."
@@ -162,7 +166,7 @@ class BaseTrainer:
             "model": self.model.state_dict()
         }
 
-        # "latest_model.tar"
+        # Saved in "latest_model.tar"
         # Contains all checkpoint information, including the optimizer parameters, the model parameters, etc.
         # New checkpoint will overwrite the older one.
         torch.save(state_dict, (self.checkpoints_dir / "latest_model.tar").as_posix())
@@ -171,8 +175,8 @@ class BaseTrainer:
         # Contains all checkpoint information, like "latest_model.tar". However, the newer information will no overwrite the older one.
         torch.save(state_dict, (self.checkpoints_dir / f"model_{str(epoch).zfill(4)}.tar").as_posix())
 
-        # If the model get a best metric score (is_best_epoch=True) in the current epoch,
-        # the model checkpoint will be saved as "best_model.tar."
+        # If the model get a best metric score (means "is_best_epoch=True") in the current epoch,
+        # the model checkpoint will be saved as "best_model.tar"
         # The newer best-scored checkpoint will overwrite the older one.
         if is_best_epoch:
             print(self.color_tool.red(f"\t Found a best score in the {epoch} epoch, saving..."))
@@ -280,25 +284,38 @@ class BaseTrainer:
                 print(self.color_tool.yellow(f"{'=' * 15} {epoch} epoch {'=' * 15}"))
                 print("[0 seconds] Begin training...")
 
+            # [debug validation] Only run validation (only use the first GPU (process))
+            # inference + calculating metrics + saving checkpoints
+            if self.only_validation and self.rank == 0:
+                self._set_models_to_eval_mode()
+                metric_score = self._validation_epoch(epoch)
+
+                if self._is_best_epoch(metric_score, save_max_metric_score=self.save_max_metric_score):
+                    self._save_checkpoint(epoch, is_best_epoch=True)
+
+                # Skip the following regular training, saving checkpoints, and validation
+                continue
+
+            # Regular training
             timer = ExecutionTime()
             self._set_models_to_train_mode()
             self._train_epoch(epoch)
 
-            # Only use the first GPU (process) to the validation.
-            if self.rank == 0:
-                if self.save_checkpoint_interval != 0 and (epoch % self.save_checkpoint_interval == 0):
-                    self._save_checkpoint(epoch)
+            #  Regular save checkpoints
+            if self.rank == 0 and self.save_checkpoint_interval != 0 and (epoch % self.save_checkpoint_interval == 0):
+                self._save_checkpoint(epoch)
 
-                if epoch % self.validation_interval == 0:
-                    print(f"[{timer.duration()} seconds] Training has finished, validation is in progress...")
+            # Regular validation
+            if self.rank == 0 and (epoch % self.validation_interval == 0):
+                print(f"[{timer.duration()} seconds] Training has finished, validation is in progress...")
 
-                    self._set_models_to_eval_mode()
-                    metric_score = self._validation_epoch(epoch)
+                self._set_models_to_eval_mode()
+                metric_score = self._validation_epoch(epoch)
 
-                    if self._is_best_epoch(metric_score, save_max_metric_score=self.save_max_metric_score):
-                        self._save_checkpoint(epoch, is_best_epoch=True)
+                if self._is_best_epoch(metric_score, save_max_metric_score=self.save_max_metric_score):
+                    self._save_checkpoint(epoch, is_best_epoch=True)
 
-                    print(f"[{timer.duration()} seconds] This epoch has finished.")
+            print(f"[{timer.duration()} seconds] This epoch is finished.")
 
     def _train_epoch(self, epoch):
         raise NotImplementedError
