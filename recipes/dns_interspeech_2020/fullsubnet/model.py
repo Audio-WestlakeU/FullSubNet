@@ -99,13 +99,15 @@ class Model(BaseModel):
 
         # Speeding up training without significant performance degradation. These will be updated to the paper later.
         if batch_size > 1:
-            sb_input = drop_band(sb_input.permute(0, 2, 1, 3), num_groups=self.num_groups_in_drop_band)  # [B, C, F//num_groups, T]
+            sb_input = drop_band(sb_input.permute(0, 2, 1, 3), num_groups=self.num_groups_in_drop_band)  # [B, (F_s + F_f), F//num_groups, T]
             num_freqs = sb_input.shape[2]
-            sb_input = sb_input.permute(0, 2, 1, 3).reshape(
-                batch_size * num_freqs,
-                (self.sb_num_neighbors * 2 + 1) + (self.fb_num_neighbors * 2 + 1),
-                num_frames
-            )
+            sb_input = sb_input.permute(0, 2, 1, 3)  # [B, F//num_groups, (F_s + F_f), T]
+
+        sb_input = sb_input.reshape(
+            batch_size * num_freqs,
+            (self.sb_num_neighbors * 2 + 1) + (self.fb_num_neighbors * 2 + 1),
+            num_frames
+        )
 
         # [B * F, (F_s + F_f), T] => [B * F, 2, T] => [B, F, 2, T]
         sb_mask = self.sb_model(sb_input)
