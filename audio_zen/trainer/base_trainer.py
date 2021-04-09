@@ -11,13 +11,12 @@ import toml
 import torch
 from joblib import Parallel, delayed
 from torch.cuda.amp import GradScaler
+from torch.utils.tensorboard import SummaryWriter
 
 import audio_zen.metrics as metrics
 from audio_zen.acoustics.feature import stft, istft
 from audio_zen.acoustics.utils import transform_pesq_range
 from audio_zen.utils import prepare_empty_dir, ExecutionTime
-
-from torch.utils.tensorboard import SummaryWriter
 
 plt.switch_backend('agg')
 
@@ -114,9 +113,9 @@ class BaseTrainer:
         model_path = model_path.expanduser().absolute()
         assert model_path.exists(), f"The file {model_path.as_posix()} is not exist. please check path."
 
-        map_location = {'cuda:%d' % 0: 'cuda:%d' % self.rank}
-        model_checkpoint = torch.load(model_path.as_posix(), map_location=map_location)
+        model_checkpoint = torch.load(model_path.as_posix(), map_location="cpu")
         self.model.load_state_dict(model_checkpoint["model"], strict=False)
+        self.model.to(self.rank)
 
         if self.rank == 0:
             print(f"Model preloaded successfully from {model_path.as_posix()}.")
@@ -128,16 +127,22 @@ class BaseTrainer:
         latest_model_path = self.checkpoints_dir.expanduser().absolute() / "latest_model.tar"
         assert latest_model_path.exists(), f"{latest_model_path} does not exist, can not load latest checkpoint."
 
-        self.dist.barrier()  # see https://stackoverflow.com/questions/59760328/how-does-torch-distributed-barrier-work
+        # Make sure all processes (GPUs) do not start loading before the saving is finished.
+        # see https://stackoverflow.com/questions/59760328/how-does-torch-distributed-barrier-work
+        self.dist.barrier()
 
-        map_location = {'cuda:%d' % 0: 'cuda:%d' % self.rank}
-        checkpoint = torch.load(latest_model_path.as_posix(), map_location=map_location)
+        # Load it on the CPU and later use .to(device) on the model
+        # Maybe slightly slow than use map_location="cuda:<...>"
+        # https://stackoverflow.com/questions/61642619/pytorch-distributed-data-parallel-confusion
+        checkpoint = torch.load(latest_model_path.as_posix(), map_location="cpu")
 
         self.start_epoch = checkpoint["epoch"] + 1
         self.best_score = checkpoint["best_score"]
         self.optimizer.load_state_dict(checkpoint["optimizer"])
         self.scaler.load_state_dict(checkpoint["scaler"])
+
         self.model.load_state_dict(checkpoint["model"])
+        self.model.to(self.rank)
 
         if self.rank == 0:
             print(f"Model checkpoint loaded. Training will begin at {self.start_epoch} epoch.")
@@ -145,35 +150,37 @@ class BaseTrainer:
     def _save_checkpoint(self, epoch, is_best_epoch=False):
         """
         Save checkpoint to "<save_dir>/<config name>/checkpoints" directory, which consists of:
-            - the epoch number
-            - the best metric score in history
-            - the optimizer parameters
-            - the model parameters
+            - epoch
+            - best metric score in historical epochs
+            - optimizer parameters
+            - model parameters
 
         Args:
-            is_best_epoch (bool): In current epoch, if the model get a best metric score (is_best_epoch=True),
+            is_best_epoch (bool): In the current epoch, if the model get a best metric score (is_best_epoch=True),
                                 the checkpoint of model will be saved as "<save_dir>/checkpoints/best_model.tar".
         """
         print(f"\t Saving {epoch} epoch model checkpoint...")
 
-        # TODO
-        # 统一训练与推理时的处理方式："module.*"...
         state_dict = {
             "epoch": epoch,
             "best_score": self.best_score,
             "optimizer": self.optimizer.state_dict(),
-            "scaler": self.scaler.state_dict(),
-            "model": self.model.state_dict()
+            "scaler": self.scaler.state_dict()
         }
+
+        if isinstance(self.model, torch.nn.parallel.DistributedDataParallel):
+            state_dict["model"] = self.model.module.state_dict()
+        else:
+            state_dict["model"] = self.model.state_dict()
 
         # Saved in "latest_model.tar"
         # Contains all checkpoint information, including the optimizer parameters, the model parameters, etc.
         # New checkpoint will overwrite the older one.
         torch.save(state_dict, (self.checkpoints_dir / "latest_model.tar").as_posix())
 
-        # "model_{epoch_number}.tar"
-        # Contains all checkpoint information, like "latest_model.tar". However, the newer information will no overwrite the older one.
-        torch.save(state_dict, (self.checkpoints_dir / f"model_{str(epoch).zfill(4)}.tar").as_posix())
+        # "model_{epoch_number}.pth"
+        # Contains only model.
+        torch.save(state_dict["model"], (self.checkpoints_dir / f"model_{str(epoch).zfill(4)}.pth").as_posix())
 
         # If the model get a best metric score (means "is_best_epoch=True") in the current epoch,
         # the model checkpoint will be saved as "best_model.tar"

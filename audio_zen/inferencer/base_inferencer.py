@@ -12,7 +12,7 @@ from torch.nn import functional
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from audio_zen.acoustics.utils import stft, istft, mc_stft
+from audio_zen.acoustics.feature import stft, istft, mc_stft
 from audio_zen.utils import initialize_module, prepare_device, prepare_empty_dir
 
 
@@ -90,7 +90,7 @@ class BaseInferencer:
     @staticmethod
     def _load_model(model_config, checkpoint_path, device):
         model = initialize_module(model_config["path"], args=model_config["args"], initialize=True)
-        model_checkpoint = torch.load(checkpoint_path, map_location=device)
+        model_checkpoint = torch.load(checkpoint_path, map_location="cpu")
         model_static_dict = model_checkpoint["model"]
         epoch = model_checkpoint["epoch"]
         print(f"当前正在处理 tar 格式的模型断点，其 epoch 为：{epoch}.")
@@ -131,7 +131,7 @@ class BaseInferencer:
             assert len(name) == 1, "The batch size of inference stage must 1."
             name = name[0]
 
-            enhanced = getattr(self, inference_type)(noisy.to(self.device), name, inference_args)
+            enhanced = getattr(self, inference_type)(noisy.to(self.device), inference_args)
 
             if abs(enhanced).any() > 1:
                 print(f"Warning: enhanced is not in the range [-1, 1], {name}")
