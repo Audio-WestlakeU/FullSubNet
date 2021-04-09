@@ -82,7 +82,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.preloaded_model_path:
-        assert not args.resume, "'resume' conflicts with 'preloaded_model_path'."
+        assert not args.resume, "The 'resume' conflicts with the 'preloaded_model_path'."
 
     configuration = toml.load(args.configuration)
 

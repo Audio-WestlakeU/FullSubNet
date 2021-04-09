@@ -78,8 +78,6 @@ class Model(BaseModel):
         noisy_mag = functional.pad(noisy_mag, [0, self.look_ahead])  # Pad the look ahead
         batch_size, num_channels, num_freqs, num_frames = noisy_mag.size()
         assert num_channels == 1, f"{self.__class__.__name__} takes the mag feature as inputs."
-        # if batch_size == 1:
-        #     assert self.num_groups_in_drop_band <= 1, "During the inference, all frequencies should be retained."
 
         # Fullband model
         fb_input = self.norm(noisy_mag).reshape(batch_size, num_channels * num_freqs, num_frames)
