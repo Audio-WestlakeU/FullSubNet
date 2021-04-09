@@ -56,9 +56,11 @@ tensorboard --logdir ~/Experiments/FullSubNet/FullSubNet/train --port 45454
 
 ### Inference
 
-TODO
+After training is done, or if you have a pre-trained model, you can enhance noisy speech using:
 
-### Apply a Pre-Trained Model
+```shell
+CUDA_VISIABLE_DEVICES=0 python train.py -C fullsubnet/inference.toml
+```
 
 TODO
 

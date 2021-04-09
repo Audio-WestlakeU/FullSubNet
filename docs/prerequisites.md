@@ -2,7 +2,7 @@
 
 - Linux or macOS
 - Anaconda or Miniconda
-- NVIDIA GPU + CUDA CuDNN (CPU is **not** supported)
+- NVIDIA GPU + CUDA CuDNN (CPU is **not** be supported)
 
 ## Clone
 
@@ -30,7 +30,7 @@ conda install tensorboard joblib matplotlib
 # Install pip packages
 # Check librosa=0.8
 pip install Cython
-pip install librosa pesq pypesq pystoi tqdm toml colorful mir_eval
+pip install librosa pesq pypesq pystoi tqdm toml colorful mir_eval torch_complex
 
 # (Optional) If you want to load "mp3" format audio in your dataset
 conda install -c conda-forge ffmpeg
