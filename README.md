@@ -10,7 +10,7 @@ of ["FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Chan
 to ICASSP 2021.
 
 :bulb:[[Demo\]](https://www.haoxiangsnr.com/demo/fullsubnet/) | :page_facing_up:[[PDF\]](https://arxiv.org/abs/2010.15508) | :
-floppy_disk: [[Model Checkpoint\]](https://github.com/haoxiangsnr/FullSubNet/releases)
+floppy_disk:[[Model Checkpoint\]](https://github.com/haoxiangsnr/FullSubNet/releases)
 
 <p align="center">
   <img width="460" src="docs/workflow.png" alt="workflow">
