@@ -9,7 +9,6 @@ import toml
 import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
-from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader
 
 sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..")))
@@ -22,7 +21,6 @@ def entry(rank, world_size, config, resume, only_validation):
     np.random.seed(config["meta"]["seed"])
     random.seed(config["meta"]["seed"])
 
-    print(f"Running distributed training on rank {rank}.")
     os.environ["MASTER_ADDR"] = "localhost"
     s = socket()
     s.bind(("", 0))
@@ -45,7 +43,6 @@ def entry(rank, world_size, config, resume, only_validation):
     )
 
     model = initialize_module(config["model"]["path"], args=config["model"]["args"])
-    model = DistributedDataParallel(model.to(rank), device_ids=[rank])
 
     optimizer = torch.optim.Adam(
         params=model.parameters(),

@@ -4,7 +4,8 @@ import sys
 
 import toml
 
-from audio_zen.utils import initialize_module, merge_config
+sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..")))
+from audio_zen.utils import initialize_module
 
 
 def main(config, checkpoint_path, output_dir):
@@ -19,19 +20,13 @@ def main(config, checkpoint_path, output_dir):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Inference")
-    parser.add_argument("-C", "--configuration", type=str, required=True, help="Configuration file.")
-    parser.add_argument("-M", "--model_checkpoint_path", type=str, required=True, help="The path of your model checkpoint.")
-    parser.add_argument("-O", "--output_dir", type=str, required=True, help="The path to save the enhanced speech.")
+    parser.add_argument("-C", "--configuration", type=str, required=True, help="Config file.")
+    parser.add_argument("-M", "--model_checkpoint_path", type=str, required=True, help="The path of the model's checkpoint.")
+    parser.add_argument("-O", "--output_dir", type=str, required=True, help="The path for saving enhanced speeches.")
     args = parser.parse_args()
 
-    custom_config = toml.load(args.configuration)
-    assert custom_config["inherit"], f"The config file should inherit from 'config/common/*.toml'"
-    common_config = toml.load(custom_config["inherit"])
-    del custom_config["inherit"]
-    configuration = merge_config(common_config, custom_config)
-
+    configuration = toml.load(args.configuration)
     checkpoint_path = args.model_checkpoint_path
     output_dir = args.output_dir
 
-    sys.path.append(os.path.join(os.getcwd(), ".."))
     main(configuration, checkpoint_path, output_dir)

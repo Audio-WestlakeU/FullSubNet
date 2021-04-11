@@ -1,10 +1,8 @@
-import numpy as np
-import soundfile as sf
 import torch
-from tqdm import tqdm
 
+from audio_zen.acoustics.feature import mag_phase
+from audio_zen.acoustics.mask import decompress_cIRM
 from audio_zen.inferencer.base_inferencer import BaseInferencer
-from audio_zen.acoustics.mask import mag_phase
 
 
 def cumulative_norm(input):
@@ -53,19 +51,19 @@ class Inferencer(BaseInferencer):
 
     @torch.no_grad()
     def mag(self, noisy, inference_args):
-        noisy_complex = self.stft(noisy)
+        noisy_complex = self.torch_stft(noisy)
         noisy_mag, noisy_phase = mag_phase(noisy_complex)  # [B, F, T] => [B, 1, F, T]
 
         enhanced_mag = self.model(noisy_mag.unsqueeze(1)).squeeze(1)
 
-        enhanced = self.istft((enhanced_mag, noisy_phase), length=noisy.size(-1), use_mag_phase=True)
+        enhanced = self.torch_istft((enhanced_mag, noisy_phase), length=noisy.size(-1), use_mag_phase=True)
         enhanced = enhanced.detach().squeeze(0).cpu().numpy()
 
         return enhanced
 
     @torch.no_grad()
     def scaled_mask(self, noisy, inference_args):
-        noisy_complex = self.stft(noisy)
+        noisy_complex = self.torch_stft(noisy)
         noisy_mag, noisy_phase = mag_phase(noisy_complex)
 
         # [B, F, T] => [B, 1, F, T] => model => [B, 2, F, T] => [B, F, T, 2]
@@ -74,7 +72,7 @@ class Inferencer(BaseInferencer):
         scaled_mask = scaled_mask.permute(0, 2, 3, 1)
 
         enhanced_complex = noisy_complex * scaled_mask
-        enhanced = self.istft(enhanced_complex, length=noisy.size(-1), use_mag_phase=False)
+        enhanced = self.torch_istft(enhanced_complex, length=noisy.size(-1), use_mag_phase=False)
         enhanced = enhanced.detach().squeeze(0).cpu().numpy()
 
         return enhanced
@@ -113,27 +111,86 @@ class Inferencer(BaseInferencer):
 
     @torch.no_grad()
     def full_band_crm_mask(self, noisy, inference_args):
-        noisy_complex = self.stft(noisy)
-
+        noisy_complex = self.torch_stft(noisy)
         noisy_mag, _ = mag_phase(noisy_complex)
 
         noisy_mag = noisy_mag.unsqueeze(1)
         pred_crm = self.model(noisy_mag)
         pred_crm = pred_crm.permute(0, 2, 3, 1)
 
-        lim = 9.9
-        pred_crm = lim * (pred_crm >= lim) - lim * (pred_crm <= -lim) + pred_crm * (torch.abs(pred_crm) < lim)
-        pred_crm = -10 * torch.log((10 - pred_crm) / (10 + pred_crm))
-
-        enhanced_real = pred_crm[..., 0] * noisy_complex[..., 0] - pred_crm[..., 1] * noisy_complex[..., 1]
-        enhanced_imag = pred_crm[..., 1] * noisy_complex[..., 0] + pred_crm[..., 0] * noisy_complex[..., 1]
+        pred_crm = decompress_cIRM(pred_crm)
+        enhanced_real = pred_crm[..., 0] * noisy_complex.real - pred_crm[..., 1] * noisy_complex.imag
+        enhanced_imag = pred_crm[..., 1] * noisy_complex.real + pred_crm[..., 0] * noisy_complex.imag
         enhanced_complex = torch.stack((enhanced_real, enhanced_imag), dim=-1)
-
-        enhanced = self.istft(enhanced_complex, length=noisy.size(-1), use_mag_phase=False)
-
+        enhanced = self.torch_istft(enhanced_complex, length=noisy.size(-1))
         enhanced = enhanced.detach().squeeze(0).cpu().numpy()
-
         return enhanced
+
+    @torch.no_grad()
+    def overlapped_chunk(self, noisy, inference_args):
+        noisy = noisy.squeeze(0)
+
+        num_mics = 8
+        chunk_length = 16000 * inference_args["chunk_length"]
+        chunk_hop_length = chunk_length // 2
+        num_chunks = int(noisy.shape[-1] / chunk_hop_length) + 1
+
+        win = torch.hann_window(chunk_length, device=noisy.device)
+
+        prev = None
+        enhanced = None
+        # 模拟语音的静音段，防止一上来就给语音，处理的不好
+        for chunk_idx in range(num_chunks):
+            if chunk_idx == 0:
+                pad = torch.zeros((num_mics, 256), device=noisy.device)
+
+                chunk_start_position = chunk_idx * chunk_hop_length
+                chunk_end_position = chunk_start_position + chunk_length
+
+                # concat([(8, 256), (..., ... + chunk_length)])
+                noisy_chunk = torch.cat((pad, noisy[:, chunk_start_position:chunk_end_position]), dim=1)
+                enhanced_chunk = self.model(noisy_chunk.unsqueeze(0))
+                enhanced_chunk = torch.squeeze(enhanced_chunk)
+                enhanced_chunk = enhanced_chunk[256:]
+
+                # Save the prior half chunk,
+                cur = enhanced_chunk[:chunk_length // 2]
+
+                # only for the 1st chunk,no overlap for the very 1st chunk prior half
+                prev = enhanced_chunk[chunk_length // 2:] * win[chunk_length // 2:]
+            else:
+                # use the previous noisy data as the pad
+                pad = noisy[:, (chunk_idx * chunk_hop_length - 256):(chunk_idx * chunk_hop_length)]
+
+                chunk_start_position = chunk_idx * chunk_hop_length
+                chunk_end_position = chunk_start_position + chunk_length
+
+                noisy_chunk = torch.cat((pad, noisy[:8, chunk_start_position:chunk_end_position]), dim=1)
+                enhanced_chunk = self.model(noisy_chunk.unsqueeze(0))
+                enhanced_chunk = torch.squeeze(enhanced_chunk)
+                enhanced_chunk = enhanced_chunk[256:]
+
+                # 使用这个窗函数来对拼接的位置进行平滑？
+                enhanced_chunk = enhanced_chunk * win[:len(enhanced_chunk)]
+
+                tmp = enhanced_chunk[:chunk_length // 2]
+                cur = tmp[:min(len(tmp), len(prev))] + prev[:min(len(tmp), len(prev))]
+                prev = enhanced_chunk[chunk_length // 2:]
+
+            if enhanced is None:
+                enhanced = cur
+            else:
+                enhanced = torch.cat((enhanced, cur), dim=0)
+
+        enhanced = enhanced[:noisy.shape[1]]
+        return enhanced.detach().squeeze(0).cpu().numpy()
+
+    @torch.no_grad()
+    def time_domain(self, noisy, inference_args):
+        noisy = noisy.to(self.device)
+        enhanced = self.model(noisy)
+        return enhanced.detach().squeeze().cpu().numpy()
+
 
 if __name__ == '__main__':
     a = torch.rand(10, 2, 161, 200)

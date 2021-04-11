@@ -3,9 +3,9 @@ import torch
 from torch.cuda.amp import autocast
 from tqdm import tqdm
 
-from audio_zen.trainer.base_trainer import BaseTrainer
-from audio_zen.acoustics.mask import build_complex_ideal_ratio_mask, decompress_cIRM
 from audio_zen.acoustics.feature import mag_phase, drop_band
+from audio_zen.acoustics.mask import build_complex_ideal_ratio_mask, decompress_cIRM
+from audio_zen.trainer.base_trainer import BaseTrainer
 
 plt.switch_backend('agg')
 
@@ -17,9 +17,14 @@ class Trainer(BaseTrainer):
         self.valid_dataloader = validation_dataloader
 
     def _train_epoch(self, epoch):
-        loss_total = 0.0
 
-        for noisy, clean in tqdm(self.train_dataloader, desc=f"Training {self.rank}"):
+        loss_total = 0.0
+        progress_bar = None
+
+        if self.rank == 0:
+            progress_bar = tqdm(total=len(self.train_dataloader), desc=f"Training")
+
+        for noisy, clean in self.train_dataloader:
             self.optimizer.zero_grad()
 
             noisy = noisy.to(self.rank)
@@ -50,11 +55,18 @@ class Trainer(BaseTrainer):
 
             loss_total += loss.item()
 
+            if self.rank == 0:
+                progress_bar.update(1)
+
         if self.rank == 0:
             self.writer.add_scalar(f"Loss/Train", loss_total / len(self.train_dataloader), epoch)
 
     @torch.no_grad()
     def _validation_epoch(self, epoch):
+        progress_bar = None
+        if self.rank == 0:
+            progress_bar = tqdm(total=len(self.valid_dataloader), desc=f"Validation")
+
         visualization_n_samples = self.visualization_config["n_samples"]
         visualization_num_workers = self.visualization_config["num_workers"]
         visualization_metrics = self.visualization_config["metrics"]
@@ -68,7 +80,7 @@ class Trainer(BaseTrainer):
         validation_score_list = {"With_reverb": 0.0, "No_reverb": 0.0}
 
         # speech_type in ("with_reverb", "no_reverb")
-        for i, (noisy, clean, name, speech_type) in tqdm(enumerate(self.valid_dataloader), desc="Validation"):
+        for i, (noisy, clean, name, speech_type) in enumerate(self.valid_dataloader):
             assert len(name) == 1, "The batch size for the validation stage must be one."
             name = name[0]
             speech_type = speech_type[0]
@@ -112,6 +124,9 @@ class Trainer(BaseTrainer):
             noisy_y_list[speech_type].append(noisy)
             clean_y_list[speech_type].append(clean)
             enhanced_y_list[speech_type].append(enhanced)
+
+            if self.rank == 0:
+                progress_bar.update(1)
 
         self.writer.add_scalar(f"Loss/Validation_Total", loss_total / len(self.valid_dataloader), epoch)
 
