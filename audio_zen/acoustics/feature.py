@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 
 
-def stft(y, n_fft, hop_length, win_length, device):
+def stft(y, n_fft, hop_length, win_length):
     """
     Args:
         y: [B, F, T]
@@ -26,12 +26,12 @@ def stft(y, n_fft, hop_length, win_length, device):
         n_fft,
         hop_length,
         win_length,
-        window=torch.hann_window(n_fft).to(device),
+        window=torch.hann_window(n_fft).to(y.device),
         return_complex=True
     )
 
 
-def istft(features, n_fft, hop_length, win_length, device, length=None, use_mag_phase=False):
+def istft(features, n_fft, hop_length, win_length, length=None, use_mag_phase=False):
     """
     Wrapper for the official torch.istft
 
@@ -58,7 +58,7 @@ def istft(features, n_fft, hop_length, win_length, device, length=None, use_mag_
         n_fft,
         hop_length,
         win_length,
-        window=torch.hann_window(n_fft).to(device),
+        window=torch.hann_window(n_fft).to(features.device),
         length=length
     )
 

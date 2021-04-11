@@ -1,7 +1,6 @@
 import time
 from functools import partial
 from pathlib import Path
-from collections import OrderedDict
 
 import librosa
 import numpy as np
@@ -127,7 +126,7 @@ class BaseInferencer:
 
         inference_args = self.inference_config["args"]
 
-        for noisy, _, name in tqdm(self.dataloader, desc="Inference"):
+        for noisy, name in tqdm(self.dataloader, desc="Inference"):
             assert len(name) == 1, "The batch size of inference stage must 1."
             name = name[0]
 

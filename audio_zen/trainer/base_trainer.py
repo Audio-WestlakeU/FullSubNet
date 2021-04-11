@@ -11,6 +11,7 @@ import toml
 import torch
 from joblib import Parallel, delayed
 from torch.cuda.amp import GradScaler
+from torch.nn.parallel import DistributedDataParallel
 from torch.utils.tensorboard import SummaryWriter
 
 import audio_zen.metrics as metrics
@@ -26,6 +27,7 @@ class BaseTrainer:
         self.color_tool = colorful
         self.color_tool.use_style("solarized")
 
+        model = DistributedDataParallel(model.to(rank), device_ids=[rank])
         self.model = model
         self.optimizer = optimizer
         self.loss_function = loss_function
@@ -46,8 +48,8 @@ class BaseTrainer:
         hop_length = self.acoustic_config["hop_length"]
         win_length = self.acoustic_config["win_length"]
 
-        self.torch_stft = partial(stft, n_fft=n_fft, hop_length=hop_length, win_length=win_length, device=self.rank)
-        self.torch_istft = partial(istft, n_fft=n_fft, hop_length=hop_length, win_length=win_length, device=self.rank)
+        self.torch_stft = partial(stft, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
+        self.torch_istft = partial(istft, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
         self.librosa_stft = partial(librosa.stft, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
         self.librosa_istft = partial(librosa.istft, hop_length=hop_length, win_length=win_length)
 
@@ -141,8 +143,12 @@ class BaseTrainer:
         self.optimizer.load_state_dict(checkpoint["optimizer"])
         self.scaler.load_state_dict(checkpoint["scaler"])
 
-        self.model.load_state_dict(checkpoint["model"])
-        self.model.to(self.rank)
+        if isinstance(self.model, torch.nn.parallel.DistributedDataParallel):
+            self.model.module.load_state_dict(checkpoint["model"])
+        else:
+            self.model.load_state_dict(checkpoint["model"])
+
+        # self.model.to(self.rank)
 
         if self.rank == 0:
             print(f"Model checkpoint loaded. Training will begin at {self.start_epoch} epoch.")
