@@ -35,5 +35,5 @@ def get_power_spectral_density_matrix(complex_tensor: ComplexTensor) -> ComplexT
 def apply_beamforming_vector(beamforming_vector: ComplexTensor, mix: ComplexTensor) -> ComplexTensor:
     # [..., C] x [..., C, T] => [..., T]
     # There's no relationship between frequencies.
-    es = FC.einsum("bftc, bfct -> bft'", [beamforming_vector.conj(), mix])
+    es = FC.einsum("bftc, bfct -> bft", [beamforming_vector.conj(), mix])
     return es
