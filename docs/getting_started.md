@@ -55,7 +55,7 @@ tensorboard --logdir ~/Experiments/FullSubNet/train
 tensorboard --logdir ~/Experiments/FullSubNet/train --port 45454
 ```
 
-### Inference or Applying a Pre-trained Model
+### Inference
 
 After training, you can enhance noisy speech. Take the FullSubNet as an example:
 
@@ -71,7 +71,7 @@ dataset_dir_list = [
 sr = 16000
 ```
 
-2. Switching to `FullSubNet/recipes/dns_interspeech_2020`. Entering the following commandlines:
+2. Switch to `FullSubNet/recipes/dns_interspeech_2020` directory and start inference:
 
 ```shell
 cd FullSubNet/recipes/dns_interspeech_2020
@@ -83,16 +83,18 @@ python inference.py \
   -O /path/to/your/enhancement/dir
 ```
 
-Or, you use a pre-trained model downloaded from the [Releases Page](https://github.com/haoxiangsnr/FullSubNet/releases):
+### Applying a Pre-trained Model
 
-1. As mentioned above, you need to check the noisy speech directory path and the sample rate in `FullSubNet/recipes/dns_interspeech_2020/fullsubnet/inference.toml`.
-2. Changing the "-M" parameter to the path of the pre-trained model downloaded from the releases.
+Or, in the inference stage, you can use a pre-trained model downloaded from the [Releases Page](https://github.com/haoxiangsnr/FullSubNet/releases):
 
-Check other details in `FullSubNet/recipes/dns_interspeech_2020/fullsubnet/inference.toml`.
+1. As mentioned above, you need to check the noisy speech directory path and the sample rate in `FullSubNet/recipes/dns_interspeech_2020/fullsubnet/inference.toml` are correct.
+2. Change the "-M" parameter to the path of the pre-trained model downloaded from the Releases Page.
+
+Check more details of inference parameters in `FullSubNet/recipes/dns_interspeech_2020/fullsubnet/inference.toml`.
 
 ### Metrics
 
-Calculating metrics (SI_SDR, STOI, WB_PESQ, NB_PESQ, etc.) using the following commandline:
+Calculating metrics (SI_SDR, STOI, WB_PESQ, NB_PESQ, etc.) using the following command lines:
 
 ```shell
 # Switching path
