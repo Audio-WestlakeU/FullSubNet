@@ -64,13 +64,13 @@ class BaseInferencer:
     @staticmethod
     def _unfold(input, pad_mode, n_neighbor):
         """
-        沿着频率轴，将语谱图划分为多个 overlap 的子频带
+        Along the frequency axis, to divide the spectrogram into multiple overlapped sub band.
 
         Args:
             input: [B, C, F, T]
 
         Returns:
-            [B, N, C, F, T], F 为子频带的频率轴大小, e.g. [2, 161, 1, 19, 200]
+            [B, N, C, F, T], F is the number of frequency of the sub band unit, e.g., [2, 161, 1, 19, 200]
         """
         assert input.dim() == 4, f"The dim of input is {input.dim()}, which should be 4."
         batch_size, n_channels, n_freqs, n_frames = input.size()
@@ -81,9 +81,9 @@ class BaseInferencer:
         output = functional.unfold(output, (sub_band_n_freqs, n_frames))
         assert output.shape[-1] == n_freqs, f"n_freqs != N (sub_band), {n_freqs} != {output.shape[-1]}"
 
-        # 拆分 unfold 中间的维度
+        # Split the middle dimensions of the unfolded features
         output = output.reshape(batch_size, n_channels, sub_band_n_freqs, n_frames, n_freqs)
-        output = output.permute(0, 4, 1, 2, 3).contiguous()  # permute 本质上与  reshape 可是不同的 ...，得到的维度相同，但 entity 不同啊
+        output = output.permute(0, 4, 1, 2, 3).contiguous()
         return output
 
     @staticmethod
@@ -92,7 +92,7 @@ class BaseInferencer:
         model_checkpoint = torch.load(checkpoint_path, map_location="cpu")
         model_static_dict = model_checkpoint["model"]
         epoch = model_checkpoint["epoch"]
-        print(f"当前正在处理 tar 格式的模型断点，其 epoch 为：{epoch}.")
+        print(f"Loading model checkpoint (epoch == {epoch})...")
 
         model.load_state_dict(model_static_dict)
         model.to(device)

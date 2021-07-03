@@ -1,7 +1,7 @@
+import math
 import os
 
 import librosa
-import math
 import numpy as np
 import torch
 import torch.nn as nn
@@ -11,10 +11,9 @@ def stft(y, n_fft, hop_length, win_length):
     """
     Args:
         y: [B, F, T]
-        n_fft:
-        hop_length:
-        win_length:
-        device:
+        n_fft: num of FFT
+        hop_length: hop length
+        win_length: window length
 
     Returns:
         [B, F, T], **complex-valued** STFT coefficients
@@ -515,7 +514,8 @@ class DirectionalFeatureComputer(nn.Module):
 
         directional_feature = []
         if "LPS" in self.input_features:
-            lps = torch.log(magnitude[:, self.lps_channel, ...] ** 2 + self.eps)  # [B, F, K], the 4-th channel, which is counted from right to left.
+            lps = torch.log(magnitude[:, self.lps_channel,
+                            ...] ** 2 + self.eps)  # [B, F, K], the 4-th channel, which is counted from right to left.
             lps = self.lps_layer_norm(lps)
             directional_feature.append(lps)
 
@@ -612,7 +612,8 @@ class ChannelDirectionalFeatureComputer(nn.Module):
 
         directional_feature = []
         if "LPS" in self.input_features:
-            lps = torch.log(magnitude[:, self.lps_channel, ...] ** 2 + self.eps)  # [B, F, K], the 4-th channel, which is counted from right to left.
+            lps = torch.log(magnitude[:, self.lps_channel,
+                            ...] ** 2 + self.eps)  # [B, F, K], the 4-th channel, which is counted from right to left.
             lps = lps[:, None, ...]
             directional_feature.append(lps)
 
