@@ -7,19 +7,18 @@
 
 This Git repository for the official PyTorch implementation
 of ["FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement"](https://arxiv.org/abs/2010.15508), accepted
-to ICASSP 2021.
+to ICASSP 2021. 
 
-[![FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement](https://res.cloudinary.com/marcomontalbano/image/upload/v1625280913/video_to_markdown/images/youtube--XJeE-MWDlk0-c05b58ac6eb4c4700831b2b3070cd403.jpg)](https://youtu.be/XJeE-MWDlk0 "FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement")
-
-<p align="center">
 :bulb:[[Demo\]](https://www.haoxiangsnr.com/demo/fullsubnet/) | :page_facing_up:[[PDF\]](https://arxiv.org/abs/2010.15508) | :floppy_disk:[[Model Checkpoint\]](https://github.com/haoxiangsnr/FullSubNet/releases) | :satellite:[[Loss Curve\]](https://tensorboard.dev/experiment/63WgyAXOSbiBzHg4AdVfYw/#scalars)
-</p>
 
-<p align="center">
-  <img width="460" src="docs/workflow.png" alt="workflow">
-</p>
+## Introducation
 
-![fullsubnet_result](docs/fullsubnet-result.png)
+<div align="left">
+  <a href="https://www.youtube.com/watch?v=XJeE-MWDlk0"><img src="https://img.youtube.com/vi/XJeE-MWDlk0/0.jpg" alt="FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement"></a>
+</div>
+
+
+## Key Features
 
 You can use all of these things:
 
@@ -48,8 +47,6 @@ If you use this code for your research, please consider citing:
     booktitle={ICASSP 2021 - 2021 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 
     title={Fullsubnet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement}, 
     year={2021},
-    volume={},
-    number={},
     pages={6633-6637},
     doi={10.1109/ICASSP39728.2021.9414177}
 }
