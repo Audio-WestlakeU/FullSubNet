@@ -13,10 +13,7 @@ to ICASSP 2021.
 
 ## Introducation
 
-<div align="left">
-  <a href="https://www.youtube.com/watch?v=XJeE-MWDlk0"><img src="https://img.youtube.com/vi/XJeE-MWDlk0/0.jpg" alt="FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement"></a>
-</div>
-
+[![Click it to show a video](https://i.imgur.com/s3mq7NNl.png)](https://youtu.be/XJeE-MWDlk0 "FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement")
 
 ## Key Features
 
