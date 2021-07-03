@@ -1,5 +1,5 @@
 [meta]
-save_dir = "/apdcephfs/share_976139/xianghao/Experiments_share_976139/FullSubNet/FullSubNet"
+save_dir = "/apdcephfs/share_976139/xianghao/Experiments_share_976139/FullSubNet"
 description = "This is a description of FullSubNet experiment."
 seed = 0  # set random seed for random, numpy, pytorch-gpu and pytorch-cpu
 keep_reproducibility = false  # see https://pytorch.org/docs/stable/notes/randomness.html

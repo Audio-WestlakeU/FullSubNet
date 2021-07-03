@@ -1,5 +1,5 @@
 [meta]
-save_dir = "~/Experiments/FullSubNet/Fullband_Baseline"
+save_dir = "~/Experiments/Fullband_Baseline"
 description = "This is a description of FullSubNet experiment."
 seed = 0
 keep_reproducibility = false

@@ -16,7 +16,7 @@ Git repository is the ICASSP 2021 Dataset. You need to check out the default bra
 
 ### Training
 
-Use the default training configuration:
+First, we need to enter a directory named after the dataset, such as `dns_interspeech_2020`. Then, we can call the default training configuration:
 
 ```shell
 cd FullSubNet/recipes/dns_interspeech_2020
@@ -31,34 +31,35 @@ CUDA_VISIABLE_DEVICES=0 python train.py -C fullband_baseline/train.toml -N 1
 CUDA_VISIABLE_DEVICES=0,1 python train.py -C fullband_baseline/train.toml -N 2 -R
 ```
 
+See more details in `FullSubNet/recipes/dns_interspeech_2020/train.py` and `FullSubNet/recipes/dns_interspeech_2020/**/train.toml`.
+
 ### Logs and Visualization
 
-Assuming that:
+The logs during the training will be stored, and we can visualize it using TensorBoard. Assuming that:
 
-- The file path of the training configuration is `fullsubnet/train.toml`
-- In the training configuration, `save_dir = "~/Experiments/FullSubNet/FullSubNet"`
+- The file path of the training configuration is `FullSubNet/recipes/dns_interspeech_2020/fullsubnet/train.toml`
+- In the training configuration, the key `save_dir` is `"~/Experiments/FullSubNet"`
 
-The logs will be stored in the `~/Experiments/FullSubNet/FullSubNet/train` directory. This directory contains the following:
+Then the log information will be stored in the `~/Experiments/FullSubNet/train` directory. This directory contains the following:
 
-- `logs/` directory: store the Tensorboard related data, including loss curves, audio files, and spectrogram figures.
-- `checkpoints/` directory: stores all checkpoints of the model, from which you can resume the training or start an inference.
-- `*.toml` file: the backup of the training configuration.
+- `logs/` directory: store the TensorBoard related data, including loss curves, audio files, and spectrogram figures.
+- `checkpoints/` directory: stores all checkpoints during training, from which you can resume the training or start an inference.
+- `*.toml` file: the backup of the current training configuration.
 
-In the `logs/` directory, use the following command to visualize loss curves, spectrogram figures, and audio files during the training and the
-validation.
+ In the `logs/` directory, use the following command to visualize loss curves, spectrogram figures, and audio files during the training and the validation.
 
 ```shell
-tensorboard --logdir ~/Experiments/FullSubNet/FullSubNet/train
+tensorboard --logdir ~/Experiments/FullSubNet/train
 
-# specify a port
-tensorboard --logdir ~/Experiments/FullSubNet/FullSubNet/train --port 45454
+# specify a port 45454
+tensorboard --logdir ~/Experiments/FullSubNet/train --port 45454
 ```
 
 ### Inference or Applying a Pre-trained Model
 
 After training, you can enhance noisy speech. Take the FullSubNet as an example:
 
-1. Checking the noisy speech directory path and the sample rate in `fullsubnet/inference.toml`.
+1. Checking the noisy speech directory path and the sample rate in `FullSubNet/recipes/dns_interspeech_2020/fullsubnet/inference.toml`.
 
 ```toml
 [dataset.args]
@@ -70,7 +71,7 @@ dataset_dir_list = [
 sr = 16000
 ```
 
-2. Switching current path to `FullSubNet/recipes/dns_interspeech_2020`. Entering the following commandline:
+2. Switching to `FullSubNet/recipes/dns_interspeech_2020`. Entering the following commandlines:
 
 ```shell
 cd FullSubNet/recipes/dns_interspeech_2020
@@ -84,10 +85,10 @@ python inference.py \
 
 Or, you use a pre-trained model downloaded from the [Releases Page](https://github.com/haoxiangsnr/FullSubNet/releases):
 
-1. As mentioned above, you need to check the noisy speech directory path and the sample rate in `fullsubnet/inference.toml`.
+1. As mentioned above, you need to check the noisy speech directory path and the sample rate in `FullSubNet/recipes/dns_interspeech_2020/fullsubnet/inference.toml`.
 2. Changing the "-M" parameter to the path of the pre-trained model downloaded from the releases.
 
-Check other details in `fullsubnet/inference.toml`.
+Check other details in `FullSubNet/recipes/dns_interspeech_2020/fullsubnet/inference.toml`.
 
 ### Metrics
 
