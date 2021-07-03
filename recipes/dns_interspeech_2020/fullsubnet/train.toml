@@ -2,9 +2,8 @@
 save_dir = "/apdcephfs/share_976139/xianghao/Experiments_share_976139/FullSubNet"
 description = "This is a description of FullSubNet experiment."
 seed = 0  # set random seed for random, numpy, pytorch-gpu and pytorch-cpu
-keep_reproducibility = false  # see https://pytorch.org/docs/stable/notes/randomness.html
-use_amp = false  # use automatic mixed precision, it will benefits Tensor Core-enabled GPU (e.g. Volta, Turing, Ampere). 2-3X speedup。
-
+use_amp = true
+cudnn_enable = true
 
 [acoustics]
 n_fft = 512
@@ -54,12 +53,10 @@ batch_size = 38
 num_workers = 12
 drop_last = true
 pin_memory = true
-shuffle = true
 
 
 [validation_dataset]
 path = "dataset_validation.Dataset"
-
 [validation_dataset.args]
 dataset_dir_list = [
     "/apdcephfs/share_976139/xianghao/Datasets_share_976139/DNS-INTERSPEECH-2020/datasets/test_set/synthetic/with_reverb/",
@@ -69,7 +66,7 @@ sr = 16000
 
 
 [model]
-path = "fullsubnet.model.Model"
+path = "model.Model"
 
 [model.args]
 sb_num_neighbors = 15
@@ -87,7 +84,7 @@ num_groups_in_drop_band = 2
 
 
 [trainer]
-path = "fullsubnet.trainer.Trainer"
+path = "trainer.Trainer"
 [trainer.train]
 clip_grad_norm_value = 10
 epochs = 9999

@@ -1,38 +1,42 @@
 import argparse
 import os
 import random
+import socket
 import sys
-from socket import socket
+from pathlib import Path
 
 import numpy as np
 import toml
 import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, DistributedSampler
 
-sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..")))
+sys.path.append(os.path.abspath(os.path.join(__file__, "..", "..", "..")))  # add /path/to/FullSubNet
 import audio_zen.loss as loss
 from audio_zen.utils import initialize_module
 
 
-def entry(rank, world_size, config, resume, only_validation):
+def entry(rank, world_size, free_port, config, resume, only_validation):
     torch.manual_seed(config["meta"]["seed"])  # For both CPU and GPU
     np.random.seed(config["meta"]["seed"])
     random.seed(config["meta"]["seed"])
 
     os.environ["MASTER_ADDR"] = "localhost"
-    s = socket()
-    s.bind(("", 0))
-    os.environ["MASTER_PORT"] = "1111"  # A random local port
+    os.environ["MASTER_PORT"] = str(free_port)  # A random local port
 
     # Initialize the process group
-    dist.init_process_group("gloo", rank=rank, world_size=world_size)
+    dist.init_process_group("nccl", rank=rank, world_size=world_size)
+    print(f"{rank + 1}/{world_size} process initialized.")
 
     # The DistributedSampler will split the dataset into the several cross-process parts.
     # On the contrary, "Sampler=None, shuffle=True", each GPU will get all data in the whole dataset.
+    train_dataset = initialize_module(config["train_dataset"]["path"], args=config["train_dataset"]["args"])
+    sampler = DistributedSampler(dataset=train_dataset, num_replicas=world_size, rank=rank, shuffle=True)
     train_dataloader = DataLoader(
-        dataset=initialize_module(config["train_dataset"]["path"], args=config["train_dataset"]["args"]),
+        dataset=train_dataset,
+        sampler=sampler,
+        shuffle=False,
         **config["train_dataset"]["dataloader"],
     )
 
@@ -51,6 +55,7 @@ def entry(rank, world_size, config, resume, only_validation):
     )
 
     loss_function = getattr(loss, config["loss_function"]["name"])(**config["loss_function"]["args"])
+
     trainer_class = initialize_module(config["trainer"]["path"], initialize=False)
 
     trainer = trainer_class(
@@ -81,11 +86,22 @@ if __name__ == '__main__':
     if args.preloaded_model_path:
         assert not args.resume, "The 'resume' conflicts with the 'preloaded_model_path'."
 
-    configuration = toml.load(args.configuration)
+    config_path = Path(args.configuration).expanduser().absolute()
+    configuration = toml.load(config_path.as_posix())
+
+    # append the parent dir of the config path to python's context
+    # /path/to/recipes/dns_interspeech_2020/exp/'
+    sys.path.append(config_path.parent.as_posix())
 
     configuration["meta"]["experiment_name"], _ = os.path.splitext(os.path.basename(args.configuration))
     configuration["meta"]["config_path"] = args.configuration
     configuration["meta"]["preloaded_model_path"] = args.preloaded_model_path
+
+    socket_stream = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    socket_stream.bind(("", 0))
+    socket_stream.listen(1)
+    free_port = socket_stream.getsockname()[1]
+    socket_stream.close()
 
     # Expand python search path to "recipes"
     # sys.path.append(os.path.join(os.getcwd(), ".."))
@@ -95,6 +111,6 @@ if __name__ == '__main__':
     # the rank is the unique ID given to a process.
     # Find more information about DistributedDataParallel (DDP) in https://pytorch.org/tutorials/intermediate/ddp_tutorial.html.
     mp.spawn(entry,
-             args=(args.num_gpus, configuration, args.resume, args.only_validation),
+             args=(args.num_gpus, free_port, configuration, args.resume, args.only_validation),
              nprocs=args.num_gpus,
              join=True)

@@ -2,7 +2,6 @@ import time
 from functools import partial
 from pathlib import Path
 
-import colorful
 import librosa
 import librosa.display
 import matplotlib.pyplot as plt
@@ -10,6 +9,8 @@ import numpy as np
 import toml
 import torch
 from joblib import Parallel, delayed
+from rich import print
+from rich.console import Console
 from torch.cuda.amp import GradScaler
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.tensorboard import SummaryWriter
@@ -20,15 +21,13 @@ from audio_zen.acoustics.utils import transform_pesq_range
 from audio_zen.utils import prepare_empty_dir, ExecutionTime
 
 plt.switch_backend('agg')
+console = Console()
 
 
 class BaseTrainer:
     def __init__(self, dist, rank, config, resume, only_validation, model, loss_function, optimizer):
-        self.color_tool = colorful
-        self.color_tool.use_style("solarized")
-
-        model = DistributedDataParallel(model.to(rank), device_ids=[rank])
-        self.model = model
+        torch.cuda.set_device(rank)
+        self.model = DistributedDataParallel(model.cuda(rank), device_ids=[rank])
         self.optimizer = optimizer
         self.loss_function = loss_function
 
@@ -36,18 +35,22 @@ class BaseTrainer:
         self.rank = rank
         self.dist = dist
 
+        # 可能由于 K80，或者 cuda 的问题吧
+        torch.backends.cudnn.enabled = config["meta"]["cudnn_enable"]
+        # torch.backends.cudnn.deterministic = True
+        # torch.backends.cudnn.benchmark = False
+
         # Automatic mixed precision (AMP)
         self.use_amp = config["meta"]["use_amp"]
         self.scaler = GradScaler(enabled=self.use_amp)
 
         # Acoustics
         self.acoustic_config = config["acoustics"]
-
-        # Supported STFT
         n_fft = self.acoustic_config["n_fft"]
         hop_length = self.acoustic_config["hop_length"]
         win_length = self.acoustic_config["win_length"]
 
+        # Supported STFT
         self.torch_stft = partial(stft, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
         self.torch_istft = partial(istft, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
         self.librosa_stft = partial(librosa.stft, n_fft=n_fft, hop_length=hop_length, win_length=win_length)
@@ -95,10 +98,8 @@ class BaseTrainer:
                 global_step=1
             )
 
-            print(self.color_tool.cyan("The configurations are as follows: "))
-            print(self.color_tool.cyan("=" * 40))
-            print(self.color_tool.cyan(toml.dumps(config)[:-1]))  # except "\n"
-            print(self.color_tool.cyan("=" * 40))
+            print("The configurations are as follows: ")
+            print(config)  # except "\n"
 
             with open((self.save_dir / f"{time.strftime('%Y-%m-%d %H:%M:%S')}.toml").as_posix(), "w") as handle:
                 toml.dump(config, handle)
@@ -129,14 +130,14 @@ class BaseTrainer:
         latest_model_path = self.checkpoints_dir.expanduser().absolute() / "latest_model.tar"
         assert latest_model_path.exists(), f"{latest_model_path} does not exist, can not load latest checkpoint."
 
-        # Make sure all processes (GPUs) do not start loading before the saving is finished.
-        # see https://stackoverflow.com/questions/59760328/how-does-torch-distributed-barrier-work
-        self.dist.barrier()
-
         # Load it on the CPU and later use .to(device) on the model
         # Maybe slightly slow than use map_location="cuda:<...>"
         # https://stackoverflow.com/questions/61642619/pytorch-distributed-data-parallel-confusion
         checkpoint = torch.load(latest_model_path.as_posix(), map_location="cpu")
+
+        # Make sure all processes (GPUs) do not start loading before the saving is finished.
+        # see https://stackoverflow.com/questions/59760328/how-does-torch-distributed-barrier-work
+        self.dist.barrier()
 
         self.start_epoch = checkpoint["epoch"] + 1
         self.best_score = checkpoint["best_score"]
@@ -192,7 +193,7 @@ class BaseTrainer:
         # the model checkpoint will be saved as "best_model.tar"
         # The newer best-scored checkpoint will overwrite the older one.
         if is_best_epoch:
-            print(self.color_tool.red(f"\t Found a best score in the {epoch} epoch, saving..."))
+            print(f"\t :smiley: Found a best score in the {epoch} epoch, saving...")
             torch.save(state_dict, (self.checkpoints_dir / "best_model.tar").as_posix())
 
     def _is_best_epoch(self, score, save_max_metric_score=True):
@@ -250,7 +251,8 @@ class BaseTrainer:
         plt.tight_layout()
         self.writer.add_figure(f"{mark}_Spectrogram/{name}", fig, epoch)
 
-    def metrics_visualization(self, noisy_list, clean_list, enhanced_list, metrics_list, epoch, num_workers=10, mark=""):
+    def metrics_visualization(self, noisy_list, clean_list, enhanced_list, metrics_list, epoch, num_workers=10,
+                              mark=""):
         """
         Get metrics on validation dataset by paralleling.
 
@@ -259,7 +261,7 @@ class BaseTrainer:
              used for checking if the current epoch is a "best epoch."
             2. If you want to use a new metric, you must register it in "util.metrics" file.
         """
-        assert "STOI" in metrics_list and "WB_PESQ" in metrics_list, "'STOI' and 'WB_PESQ' must be existence."
+        assert "STOI" in metrics_list and "WB_PESQ" in metrics_list, "'STOI' and 'WB_PESQ' must be exist."
 
         # Check if the metric is registered in "util.metrics" file.
         for i in metrics_list:
@@ -272,10 +274,11 @@ class BaseTrainer:
                 delayed(metrics.REGISTERED_METRICS[metric_name])(ref, est) for ref, est in zip(clean_list, noisy_list)
             )
             score_on_enhanced = Parallel(n_jobs=num_workers)(
-                delayed(metrics.REGISTERED_METRICS[metric_name])(ref, est) for ref, est in zip(clean_list, enhanced_list)
+                delayed(metrics.REGISTERED_METRICS[metric_name])(ref, est) for ref, est in
+                zip(clean_list, enhanced_list)
             )
 
-            # Add the mean value of the metric to tensorboard
+            # Add mean value of the metric to tensorboard
             mean_score_on_noisy = np.mean(score_on_noisy)
             mean_score_on_enhanced = np.mean(score_on_enhanced)
             self.writer.add_scalars(f"{mark}_Validation/{metric_name}", {
@@ -294,7 +297,7 @@ class BaseTrainer:
     def train(self):
         for epoch in range(self.start_epoch, self.epochs + 1):
             if self.rank == 0:
-                print(self.color_tool.yellow(f"{'=' * 15} {epoch} epoch {'=' * 15}"))
+                print(f"{'=' * 15} {epoch} epoch {'=' * 15}")
                 print("[0 seconds] Begin training...")
 
             # [debug validation] Only run validation (only use the first GPU (process))
@@ -328,7 +331,8 @@ class BaseTrainer:
                 if self._is_best_epoch(metric_score, save_max_metric_score=self.save_max_metric_score):
                     self._save_checkpoint(epoch, is_best_epoch=True)
 
-            print(f"[{timer.duration()} seconds] This epoch is finished.")
+            if self.rank == 0:
+                print(f"[{timer.duration()} seconds] This epoch is finished.")
 
     def _train_epoch(self, epoch):
         raise NotImplementedError

@@ -33,7 +33,7 @@ conda install tensorboard joblib matplotlib
 # install pip packages
 # ensure librosa=0.8
 pip install Cython
-pip install librosa pesq pypesq pystoi tqdm toml colorful mir_eval torch_complex
+pip install librosa pesq pypesq pystoi tqdm toml mir_eval torch_complex rich
 
 # (Optional) if you have "mp3" format audio in your dataset, you need to install ffmpeg.
 conda install -c conda-forge ffmpeg

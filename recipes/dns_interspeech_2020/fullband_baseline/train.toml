@@ -2,9 +2,8 @@
 save_dir = "~/Experiments/Fullband_Baseline"
 description = "This is a description of FullSubNet experiment."
 seed = 0
-keep_reproducibility = false
-use_amp = false
-
+use_amp = true
+cudnn_enable = false
 
 [acoustics]
 n_fft = 512
@@ -48,12 +47,12 @@ sub_sample_length = 3.072
 target_dB_FS = -25
 target_dB_FS_floating_value = 10
 
+
 [train_dataset.dataloader]
 batch_size = 100
 num_workers = 40
 drop_last = true
 pin_memory = true
-shuffle = true
 
 
 [validation_dataset]
@@ -67,7 +66,8 @@ sr = 16000
 
 
 [model]
-path = "fullband_baseline.model.Model"
+path = "model.Model"
+
 [model.args]
 num_freqs = 257
 hidden_size = 512
@@ -79,7 +79,7 @@ weight_init = true
 
 
 [trainer]
-path = "fullband_baseline.trainer.Trainer"
+path = "trainer.Trainer"
 [trainer.train]
 clip_grad_norm_value = 10
 epochs = 9999
