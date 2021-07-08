@@ -11,7 +11,7 @@ to ICASSP 2021.
 
 :bulb:[[Demo\]](https://www.haoxiangsnr.com/demo/fullsubnet/) | :page_facing_up:[[PDF\]](https://arxiv.org/abs/2010.15508) | :floppy_disk:[[Model Checkpoint\]](https://github.com/haoxiangsnr/FullSubNet/releases) | :satellite:[[Loss Curve\]](https://tensorboard.dev/experiment/63WgyAXOSbiBzHg4AdVfYw/#scalars)
 
-## Introducation
+## Introduction
 
 [![Click it to show a video](https://i.imgur.com/s3mq7NNl.png)](https://youtu.be/XJeE-MWDlk0 "FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement")
 
