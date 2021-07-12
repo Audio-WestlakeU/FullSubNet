@@ -26,9 +26,13 @@ class Model(BaseModel):
 
         Args:
             num_freqs: Frequency dim of the input
-            sb_num_neighbors: Number of the neighbor frequencies in each side
             look_ahead: Number of use of the future frames
-            sequence_model: Chose one sequence model as the basic model (GRU, LSTM)
+            fb_num_neighbors: How much neighbor frequencies at each side from fullband model's output
+            sb_num_neighbors: How much neighbor frequencies at each side from noisy spectrogram
+            sequence_model: Chose one sequence model as the basic model e.g., GRU, LSTM
+            fb_output_activate_function: fullband model's activation function
+            sb_output_activate_function: subband model's activation function
+            norm_type: type of normalization, see more details in "BaseModel" class
         """
         super().__init__()
         assert sequence_model in ("GRU", "LSTM"), f"{self.__class__.__name__} only support GRU and LSTM."
@@ -83,11 +87,11 @@ class Model(BaseModel):
         fb_input = self.norm(noisy_mag).reshape(batch_size, num_channels * num_freqs, num_frames)
         fb_output = self.fb_model(fb_input).reshape(batch_size, 1, num_freqs, num_frames)
 
-        # Unfold the output of the fullband model, [B, N=F, C, F_f, T]
+        # Unfold fullband model's output, [B, N=F, C, F_f, T]. N is the number of sub-band units
         fb_output_unfolded = self.unfold(fb_output, num_neighbor=self.fb_num_neighbors)
         fb_output_unfolded = fb_output_unfolded.reshape(batch_size, num_freqs, self.fb_num_neighbors * 2 + 1, num_frames)
 
-        # Unfold noisy input, [B, N=F, C, F_s, T]
+        # Unfold noisy spectrogram, [B, N=F, C, F_s, T]
         noisy_mag_unfolded = self.unfold(noisy_mag, num_neighbor=self.sb_num_neighbors)
         noisy_mag_unfolded = noisy_mag_unfolded.reshape(batch_size, num_freqs, self.sb_num_neighbors * 2 + 1, num_frames)
 
@@ -95,7 +99,8 @@ class Model(BaseModel):
         sb_input = torch.cat([noisy_mag_unfolded, fb_output_unfolded], dim=2)
         sb_input = self.norm(sb_input)
 
-        # Speeding up training without significant performance degradation. These will be updated to the paper later.
+        # Speeding up training without significant performance degradation.
+        # These will be updated to the paper later.
         if batch_size > 1:
             sb_input = drop_band(sb_input.permute(0, 2, 1, 3), num_groups=self.num_groups_in_drop_band)  # [B, (F_s + F_f), F//num_groups, T]
             num_freqs = sb_input.shape[2]
