@@ -86,7 +86,7 @@ class BaseTrainer:
         self.only_validation = only_validation
 
         if config["meta"]["preloaded_model_path"]:
-            self._preload_model(Path(config["preloaded_model_path"]))
+            self._preload_model(Path(config["meta"]["preloaded_model_path"]))
 
         if self.rank == 0:
             prepare_empty_dir([self.checkpoints_dir, self.logs_dir], resume=resume)
