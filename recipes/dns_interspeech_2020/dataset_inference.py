@@ -25,6 +25,9 @@ class Dataset(BaseDataset):
             dataset_dir = Path(dataset_dir).expanduser().absolute()
             noisy_file_path_list += librosa.util.find_files(dataset_dir.as_posix())  # Sorted
 
+        self.dataset_dir = None
+        if len(dataset_dir_list) == 1:
+            self.dataset_dir = dataset_dir_list[0]
         self.noisy_file_path_list = noisy_file_path_list
         self.length = len(self.noisy_file_path_list)
 
@@ -36,4 +39,4 @@ class Dataset(BaseDataset):
         noisy_y = librosa.load(noisy_file_path, sr=self.sr)[0]
         noisy_y = noisy_y.astype(np.float32)
 
-        return noisy_y, basename(noisy_file_path)[0]
+        return noisy_y, basename(noisy_file_path)[0], noisy_file_path, self.dataset_dir
