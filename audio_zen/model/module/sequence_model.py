@@ -2,6 +2,28 @@ import torch
 import torch.nn as nn
 
 
+# class CustomSRU(nn.Module):
+#     def __init__(self, *args, **kwargs):
+#         super().__init__()
+#         self.sru = SRU(*args, **kwargs)
+#
+#     def forward(self, x):
+#         """
+#
+#         Args:
+#             x: input
+#
+#         Shapes:
+#             x: [B, T, F]
+#             output: [B, T, F]
+#         """
+#         x = x.permute(1, 0, 2)
+#         output_states, c_states = self.sru(x)
+#         output_states = output_states.permute(1, 0, 2)
+#         c_states = c_states.permute(1, 0, 2)
+#         return output_states, c_states
+
+
 class SequenceModel(nn.Module):
     def __init__(
             self,
@@ -14,11 +36,11 @@ class SequenceModel(nn.Module):
             output_activate_function="Tanh"
     ):
         """
-        序列模型，可选 LSTM 或 CRN，支持子带输入
+        Wrapper of conventional sequence models (LSTM or GRU)
 
         Args:
             input_size: 每帧输入特征大小
-            output_size: 每帧输出特征大小
+            output_size: when projection_size> 0, the linear layer is used for projection. Otherwise, no linear layer.
             hidden_size: 序列模型隐层单元数量
             num_layers:  层数
             bidirectional: 是否为双向
@@ -43,14 +65,24 @@ class SequenceModel(nn.Module):
                 batch_first=True,
                 bidirectional=bidirectional,
             )
+        elif sequence_model == "SRU":
+            pass
+            # self.sequence_model = CustomSRU(
+            #     input_size=input_size,
+            #     hidden_size=hidden_size,
+            #     num_layers=num_layers,
+            #     bidirectional=bidirectional,
+            #     highway_bias=-2
+            # )
         else:
             raise NotImplementedError(f"Not implemented {sequence_model}")
 
         # Fully connected layer
-        if bidirectional:
-            self.fc_output_layer = nn.Linear(hidden_size * 2, output_size)
-        else:
-            self.fc_output_layer = nn.Linear(hidden_size, output_size)
+        if int(output_size):
+            if bidirectional:
+                self.fc_output_layer = nn.Linear(hidden_size * 2, output_size)
+            else:
+                self.fc_output_layer = nn.Linear(hidden_size, output_size)
 
         # Activation function layer
         if output_activate_function:
@@ -60,10 +92,15 @@ class SequenceModel(nn.Module):
                 self.activate_function = nn.ReLU()
             elif output_activate_function == "ReLU6":
                 self.activate_function = nn.ReLU6()
+            elif output_activate_function == "LeakyReLU":
+                self.activate_function = nn.LeakyReLU()
+            elif output_activate_function == "PReLU":
+                self.activate_function = nn.PReLU()
             else:
                 raise NotImplementedError(f"Not implemented activation function {self.activate_function}")
 
         self.output_activate_function = output_activate_function
+        self.output_size = output_size
 
     def forward(self, x):
         """
@@ -72,17 +109,20 @@ class SequenceModel(nn.Module):
         Returns:
             [B, F, T]
         """
-        assert x.dim() == 3
+        assert x.dim() == 3, f"The shape of input is {x.shape}."
         self.sequence_model.flatten_parameters()
 
         # contiguous 使元素在内存中连续，有利于模型优化，但分配了新的空间
         # 建议在网络开始大量计算前使用一下
-        x = x.permute(0, 2, 1).contiguous()  # [B, F, T] => [B, T, F]
+        x = x.permute(0, 2, 1)  # [B, F, T] => [B, T, F]
         o, _ = self.sequence_model(x)
-        o = self.fc_output_layer(o)
+
+        if self.output_size:
+            o = self.fc_output_layer(o)
+
         if self.output_activate_function:
             o = self.activate_function(o)
-        o = o.permute(0, 2, 1).contiguous()  # [B, T, F] => [B, F, T]
+        o = o.permute(0, 2, 1)  # [B, T, F] => [B, F, T]
         return o
 
 

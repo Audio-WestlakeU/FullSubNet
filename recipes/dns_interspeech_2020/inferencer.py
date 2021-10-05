@@ -111,18 +111,16 @@ class Inferencer(BaseInferencer):
 
     @torch.no_grad()
     def full_band_crm_mask(self, noisy, inference_args):
-        noisy_complex = self.torch_stft(noisy)
-        noisy_mag, _ = mag_phase(noisy_complex)
+        noisy_mag, noisy_phase, noisy_real, noisy_imag = self.torch_stft(noisy)
 
         noisy_mag = noisy_mag.unsqueeze(1)
         pred_crm = self.model(noisy_mag)
         pred_crm = pred_crm.permute(0, 2, 3, 1)
 
         pred_crm = decompress_cIRM(pred_crm)
-        enhanced_real = pred_crm[..., 0] * noisy_complex.real - pred_crm[..., 1] * noisy_complex.imag
-        enhanced_imag = pred_crm[..., 1] * noisy_complex.real + pred_crm[..., 0] * noisy_complex.imag
-        enhanced_complex = torch.stack((enhanced_real, enhanced_imag), dim=-1)
-        enhanced = self.torch_istft(enhanced_complex, length=noisy.size(-1))
+        enhanced_real = pred_crm[..., 0] * noisy_real - pred_crm[..., 1] * noisy_imag
+        enhanced_imag = pred_crm[..., 1] * noisy_real + pred_crm[..., 0] * noisy_imag
+        enhanced = self.torch_istft((enhanced_real, enhanced_imag), length=noisy.size(-1), input_type="real_imag")
         enhanced = enhanced.detach().squeeze(0).cpu().numpy()
         return enhanced
 

@@ -3,9 +3,9 @@ import torch
 from torch.cuda.amp import autocast
 from tqdm import tqdm
 
-from audio_zen.acoustics.feature import mag_phase, drop_band
-from audio_zen.acoustics.mask import build_complex_ideal_ratio_mask, decompress_cIRM
+from audio_zen.acoustics.feature import drop_band
 from audio_zen.trainer.base_trainer import BaseTrainer
+from audio_zen.acoustics.mask import build_complex_ideal_ratio_mask, decompress_cIRM
 
 plt.switch_backend('agg')
 
@@ -17,26 +17,19 @@ class Trainer(BaseTrainer):
         self.valid_dataloader = validation_dataloader
 
     def _train_epoch(self, epoch):
-
         loss_total = 0.0
-        progress_bar = None
 
-        if self.rank == 0:
-            progress_bar = tqdm(total=len(self.train_dataloader), desc=f"Training")
-
-        for noisy, clean in self.train_dataloader:
+        for noisy, clean in tqdm(self.train_dataloader, desc="Training") if self.rank == 0 else self.train_dataloader:
             self.optimizer.zero_grad()
 
             noisy = noisy.to(self.rank)
             clean = clean.to(self.rank)
 
-            noisy_complex = self.torch_stft(noisy)
-            clean_complex = self.torch_stft(clean)
-
-            noisy_mag, _ = mag_phase(noisy_complex)
-            ground_truth_cIRM = build_complex_ideal_ratio_mask(noisy_complex, clean_complex)  # [B, F, T, 2]
-            ground_truth_cIRM = drop_band(
-                ground_truth_cIRM.permute(0, 3, 1, 2),  # [B, 2, F ,T]
+            noisy_mag, noisy_phase, noisy_real, noisy_imag = self.torch_stft(noisy)
+            _, _, clean_real, clean_imag = self.torch_stft(clean)
+            cIRM = build_complex_ideal_ratio_mask(noisy_real, noisy_imag, clean_real, clean_imag)  # [B, F, T, 2]
+            cIRM = drop_band(
+                cIRM.permute(0, 3, 1, 2),  # [B, 2, F ,T]
                 self.model.module.num_groups_in_drop_band
             ).permute(0, 2, 3, 1)
 
@@ -45,7 +38,7 @@ class Trainer(BaseTrainer):
                 noisy_mag = noisy_mag.unsqueeze(1)
                 cRM = self.model(noisy_mag)
                 cRM = cRM.permute(0, 2, 3, 1)
-                loss = self.loss_function(ground_truth_cIRM, cRM)
+                loss = self.loss_function(cIRM, cRM)
 
             self.scaler.scale(loss).backward()
             self.scaler.unscale_(self.optimizer)
@@ -55,18 +48,11 @@ class Trainer(BaseTrainer):
 
             loss_total += loss.item()
 
-            if self.rank == 0:
-                progress_bar.update(1)
-
         if self.rank == 0:
             self.writer.add_scalar(f"Loss/Train", loss_total / len(self.train_dataloader), epoch)
 
     @torch.no_grad()
     def _validation_epoch(self, epoch):
-        progress_bar = None
-        if self.rank == 0:
-            progress_bar = tqdm(total=len(self.valid_dataloader), desc=f"Validation")
-
         visualization_n_samples = self.visualization_config["n_samples"]
         visualization_num_workers = self.visualization_config["num_workers"]
         visualization_metrics = self.visualization_config["metrics"]
@@ -80,7 +66,7 @@ class Trainer(BaseTrainer):
         validation_score_list = {"With_reverb": 0.0, "No_reverb": 0.0}
 
         # speech_type in ("with_reverb", "no_reverb")
-        for i, (noisy, clean, name, speech_type) in enumerate(self.valid_dataloader):
+        for i, (noisy, clean, name, speech_type) in tqdm(enumerate(self.valid_dataloader), desc="Validation"):
             assert len(name) == 1, "The batch size for the validation stage must be one."
             name = name[0]
             speech_type = speech_type[0]
@@ -88,11 +74,9 @@ class Trainer(BaseTrainer):
             noisy = noisy.to(self.rank)
             clean = clean.to(self.rank)
 
-            noisy_complex = self.torch_stft(noisy)
-            clean_complex = self.torch_stft(clean)
-
-            noisy_mag, _ = mag_phase(noisy_complex)
-            cIRM = build_complex_ideal_ratio_mask(noisy_complex, clean_complex)  # [B, F, T, 2]
+            noisy_mag, noisy_phase, noisy_real, noisy_imag = self.torch_stft(noisy)
+            _, _, clean_real, clean_imag = self.torch_stft(clean)
+            cIRM = build_complex_ideal_ratio_mask(noisy_real, noisy_imag, clean_real, clean_imag)  # [B, F, T, 2]
 
             noisy_mag = noisy_mag.unsqueeze(1)
             cRM = self.model(noisy_mag)
@@ -102,10 +86,9 @@ class Trainer(BaseTrainer):
 
             cRM = decompress_cIRM(cRM)
 
-            enhanced_real = cRM[..., 0] * noisy_complex.real - cRM[..., 1] * noisy_complex.imag
-            enhanced_imag = cRM[..., 1] * noisy_complex.real + cRM[..., 0] * noisy_complex.imag
-            enhanced_complex = torch.stack((enhanced_real, enhanced_imag), dim=-1)
-            enhanced = self.torch_istft(enhanced_complex, length=noisy.size(-1))
+            enhanced_real = cRM[..., 0] * noisy_real - cRM[..., 1] * noisy_imag
+            enhanced_imag = cRM[..., 1] * noisy_real + cRM[..., 0] * noisy_imag
+            enhanced = self.torch_istft((enhanced_real, enhanced_imag), length=noisy.size(-1), input_type="real_imag")
 
             noisy = noisy.detach().squeeze(0).cpu().numpy()
             clean = clean.detach().squeeze(0).cpu().numpy()
@@ -124,9 +107,6 @@ class Trainer(BaseTrainer):
             noisy_y_list[speech_type].append(noisy)
             clean_y_list[speech_type].append(clean)
             enhanced_y_list[speech_type].append(enhanced)
-
-            if self.rank == 0:
-                progress_bar.update(1)
 
         self.writer.add_scalar(f"Loss/Validation_Total", loss_total / len(self.valid_dataloader), epoch)
 

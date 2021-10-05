@@ -88,11 +88,11 @@ class Model(BaseModel):
         fb_output = self.fb_model(fb_input).reshape(batch_size, 1, num_freqs, num_frames)
 
         # Unfold fullband model's output, [B, N=F, C, F_f, T]. N is the number of sub-band units
-        fb_output_unfolded = self.unfold(fb_output, num_neighbor=self.fb_num_neighbors)
+        fb_output_unfolded = self.unfold(fb_output, num_neighbors=self.fb_num_neighbors)
         fb_output_unfolded = fb_output_unfolded.reshape(batch_size, num_freqs, self.fb_num_neighbors * 2 + 1, num_frames)
 
         # Unfold noisy spectrogram, [B, N=F, C, F_s, T]
-        noisy_mag_unfolded = self.unfold(noisy_mag, num_neighbor=self.sb_num_neighbors)
+        noisy_mag_unfolded = self.unfold(noisy_mag, num_neighbors=self.sb_num_neighbors)
         noisy_mag_unfolded = noisy_mag_unfolded.reshape(batch_size, num_freqs, self.sb_num_neighbors * 2 + 1, num_frames)
 
         # Concatenation, [B, F, (F_s + F_f), T]
@@ -121,42 +121,20 @@ class Model(BaseModel):
 
 
 if __name__ == "__main__":
-    import datetime
-
     with torch.no_grad():
+        noisy_mag = torch.rand(1, 1, 257, 63)
         model = Model(
-            sb_num_neighbors=15,
-            fb_num_neighbors=0,
             num_freqs=257,
             look_ahead=2,
             sequence_model="LSTM",
+            fb_num_neighbors=0,
+            sb_num_neighbors=15,
             fb_output_activate_function="ReLU",
-            sb_output_activate_function=None,
+            sb_output_activate_function=False,
             fb_model_hidden_size=512,
             sb_model_hidden_size=384,
-            weight_init=False,
             norm_type="offline_laplace_norm",
             num_groups_in_drop_band=2,
+            weight_init=False,
         )
-        # ipt = torch.rand(3, 800)  # 1.6s
-        # ipt_len = ipt.shape[-1]
-        # # 1000 frames (16s) - 5.65s (35.31%，纯模型) - 5.78s
-        # # 500 frames (8s) - 3.05s (38.12%，纯模型) - 3.04s
-        # # 200 frames (3.2s) - 1.19s (37.19%，纯模型) - 1.20s
-        # # 100 frames (1.6s) - 0.62s (38.75%，纯模型) - 0.65s
-        # start = datetime.datetime.now()
-        #
-        # complex_tensor = torch.stft(ipt, n_fft=512, hop_length=256)
-        # mag = (complex_tensor.pow(2.).sum(-1) + 1e-8).pow(0.5 * 1.0).unsqueeze(1)
-        # print(f"STFT: {datetime.datetime.now() - start}, {mag.shape}")
-        #
-        # enhanced_complex_tensor = model(mag).detach().permute(0, 2, 3, 1)
-        # print(enhanced_complex_tensor.shape)
-        # print(f"Model Inference: {datetime.datetime.now() - start}")
-        #
-        # enhanced = torch.istft(enhanced_complex_tensor, 512, 256, length=ipt_len)
-        # print(f"iSTFT: {datetime.datetime.now() - start}")
-        #
-        # print(f"{datetime.datetime.now() - start}")
-        ipt = torch.rand(3, 1, 257, 200)
-        print(model(ipt).shape)
+        print(model(noisy_mag).shape)

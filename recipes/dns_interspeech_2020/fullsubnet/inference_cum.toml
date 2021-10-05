@@ -18,10 +18,9 @@ path = "dataset_inference.Dataset"
 
 [dataset.args]
 dataset_dir_list = [
-#        "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/with_reverb/noisy",
-        "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/no_reverb/noisy",
-#    "/apdcephfs/share_976139/xianghao/Datasets_share_976139/DNS-INTERSPEECH-2020/datasets/test_set/synthetic/no_reverb/noisy"
-    # ~/Experiments/fullsubnet_best_model_58epochs.tar
+    #    "/apdcephfs/share_976139/xianghao/Datasets_share_976139/DNS-INTERSPEECH-2020/datasets/test_set/synthetic/with_reverb/noisy",
+    # "/apdcephfs/share_976139/xianghao/Datasets_share_976139/DNS-INTERSPEECH-2020/datasets/test_set/synthetic/no_reverb/noisy"
+"~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/no_reverb/noisy"
 ]
 sr = 16000
 
@@ -40,6 +39,6 @@ sb_output_activate_function = false
 fb_model_hidden_size = 512
 sb_model_hidden_size = 384
 weight_init = false
-norm_type = "offline_laplace_norm"
+norm_type = "cumulative_laplace_norm"
 num_groups_in_drop_band = 2
 

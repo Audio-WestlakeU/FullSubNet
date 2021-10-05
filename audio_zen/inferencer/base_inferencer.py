@@ -1,4 +1,3 @@
-import time
 from functools import partial
 from pathlib import Path
 
@@ -11,7 +10,7 @@ from torch.nn import functional
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from audio_zen.acoustics.feature import stft, istft, mc_stft
+from audio_zen.acoustics.feature import stft, istft
 from audio_zen.utils import initialize_module, prepare_device, prepare_empty_dir
 
 
@@ -28,7 +27,10 @@ class BaseInferencer:
         self.inference_config = config["inferencer"]
 
         self.enhanced_dir = root_dir / f"enhanced_{str(epoch).zfill(4)}"
-        prepare_empty_dir([self.enhanced_dir])
+        self.noisy_dir = root_dir / f"noisy"
+
+        # self.enhanced_dir = root_dir
+        prepare_empty_dir([self.noisy_dir, self.enhanced_dir])
 
         # Acoustics
         self.acoustic_config = config["acoustics"]
@@ -42,14 +44,16 @@ class BaseInferencer:
         # See utils_backup.py
         self.torch_stft = partial(stft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length)
         self.torch_istft = partial(istft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length)
-        self.torch_mc_stft = partial(mc_stft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length)
         self.librosa_stft = partial(librosa.stft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length)
         self.librosa_istft = partial(librosa.istft, hop_length=self.hop_length, win_length=self.win_length)
 
         print("Configurations are as follows: ")
         print(toml.dumps(config))
-        with open((root_dir / f"{time.strftime('%Y-%m-%d %H:%M:%S')}.toml").as_posix(), "w") as handle:
-            toml.dump(config, handle)
+        # TODO No dump
+        # with open((root_dir / f"{time.strftime('%Y-%m-%d %H:%M:%S')}.toml").as_posix(), "w") as handle:
+        #     toml.dump(config, handle)
+
+        self.config = config
 
     @staticmethod
     def _load_dataloader(dataset_config):
@@ -83,7 +87,39 @@ class BaseInferencer:
 
         # Split the middle dimensions of the unfolded features
         output = output.reshape(batch_size, n_channels, sub_band_n_freqs, n_frames, n_freqs)
+        output = output.permute(0, 4, 1, 2, 3).contiguous()  # permute 本质上与  reshape 可是不同的 ...，得到的维度相同，但 entity 不同啊
+        return output
+
+    @staticmethod
+    def _unfold_along_time(input, context_size):
+        """
+        Along the time axis, split overlapped chunks from spectrogram.
+
+        Args:
+            input: [B, C, F, T]
+            context_size:
+
+        Returns:
+            [B, N, C, F_s, T], F 为子频带的频率轴大小, e.g. [2, 161, 1, 19, 200]
+        """
+        assert input.dim() == 4, f"The dims of input is {input.dim()}. It should be four-dim."
+        batch_size, num_channels, num_freqs, num_frames = input.size()
+
+        # (i - N,..., i - 1, i)
+        chunk_size = context_size + 1
+
+        # [B, C, F, T] => [B * C * F, T] => [B * C * F, 1, 1, T]
+        input = input.reshape(batch_size * num_channels * num_freqs, num_frames)
+        input = input.unsqueeze(1).unsqueeze(1)
+
+        # [B * C * F, chunk_size, num_chunks]
+        output = functional.unfold(input, (1, chunk_size))
+
+        # Split the dim of the unfolded feature
+        # [B, num_chunks, C, F, chunk_size]
+        output = output.reshape(batch_size, num_channels, num_freqs, chunk_size, -1)
         output = output.permute(0, 4, 1, 2, 3).contiguous()
+
         return output
 
     @staticmethod
@@ -93,6 +129,8 @@ class BaseInferencer:
         model_static_dict = model_checkpoint["model"]
         epoch = model_checkpoint["epoch"]
         print(f"Loading model checkpoint (epoch == {epoch})...")
+
+        model_static_dict = {key.replace("module.", ""): value for key, value in model_static_dict.items()}
 
         model.load_state_dict(model_static_dict)
         model.to(device)
@@ -104,7 +142,7 @@ class BaseInferencer:
         """
         模型的输入为带噪语音的 **幅度谱**，输出同样为 **幅度谱**
         """
-        mixture_stft_coefficients = self.torch_mc_stft(noisy)
+        mixture_stft_coefficients = self.torch_stft(noisy)
         mixture_mag = (mixture_stft_coefficients.real ** 2 + mixture_stft_coefficients.imag ** 2) ** 0.5
 
         enhanced_mag = self.model(mixture_mag)
@@ -137,7 +175,15 @@ class BaseInferencer:
 
             amp = np.iinfo(np.int16).max
             enhanced = np.int16(0.8 * amp * enhanced / np.max(np.abs(enhanced)))
-
-            # clnsp102_traffic_248091_3_snr0_tl-21_fileid_268 => clean_fileid_0
-            # name = "clean_" + "_".join(name.split("_")[-2:])
             sf.write(self.enhanced_dir / f"{name}.wav", enhanced, samplerate=self.acoustic_config["sr"])
+
+            noisy = noisy.detach().squeeze(0).numpy()
+            if np.ndim(noisy) > 1:
+                noisy = noisy[0, :]  # first channel
+            noisy = noisy[:enhanced.shape[-1]]
+            sf.write(self.noisy_dir / f"{name}.wav", noisy, samplerate=self.acoustic_config["sr"])
+
+if __name__ == '__main__':
+    ipt = torch.rand(10, 1, 257, 100)
+    opt = BaseInferencer._unfold_along_time(ipt, 30)
+    print(opt.shape)

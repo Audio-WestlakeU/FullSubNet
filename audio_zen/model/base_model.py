@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 from torch.nn import functional
+
 from audio_zen.constant import EPSILON
 
 
@@ -10,42 +11,46 @@ class BaseModel(nn.Module):
         super(BaseModel, self).__init__()
 
     @staticmethod
-    def unfold(input, num_neighbor):
+    def unfold(input, num_neighbors):
         """
-        Along with the frequency dim, split overlapped sub band units from spectrogram.
+        Along the frequency axis, this function is used for splitting overlapped sub-band units.
 
         Args:
-            input: [B, C, F, T]
-            num_neighbor:
+            input: four-dimension input.
+            num_neighbors: number of neighbors in each side.
 
         Returns:
-            [B, N, C, F_s, T], F 为子频带的频率轴大小, e.g. [2, 161, 1, 19, 200]
+            Overlapped sub-band units.
+
+        Shapes:
+            input: [B, C, F, T]
+            return: [B, N, C, F_s, T]. F_s represents the frequency axis of the sub-band unit, e.g. [2, 161, 1, 19, 200]
         """
-        assert input.dim() == 4, f"The dim of input is {input.dim()}. It should be four dim."
+        assert input.dim() == 4, f"The dim of the input is {input.dim()}. It should be four dim."
         batch_size, num_channels, num_freqs, num_frames = input.size()
 
-        if num_neighbor < 1:
-            # No change for the input
+        if num_neighbors < 1:  # No change on the input
             return input.permute(0, 2, 1, 3).reshape(batch_size, num_freqs, num_channels, 1, num_frames)
 
         output = input.reshape(batch_size * num_channels, 1, num_freqs, num_frames)
-        sub_band_unit_size = num_neighbor * 2 + 1
+        sub_band_unit_size = num_neighbors * 2 + 1
 
-        # Pad to the top and bottom
-        output = functional.pad(output, [0, 0, num_neighbor, num_neighbor], mode="reflect")
+        # Pad the top and bottom of the original spectrogram
+        output = functional.pad(output, [0, 0, num_neighbors, num_neighbors], mode="reflect")  # [B * C, 1, F, T]
 
-        output = functional.unfold(output, (sub_band_unit_size, num_frames))
+        output = functional.unfold(output, (sub_band_unit_size, num_frames))  # move on the F and T axes.
         assert output.shape[-1] == num_freqs, f"n_freqs != N (sub_band), {num_freqs} != {output.shape[-1]}"
 
         # Split the dim of the unfolded feature
         output = output.reshape(batch_size, num_channels, sub_band_unit_size, num_frames, num_freqs)
-        output = output.permute(0, 4, 1, 2, 3).contiguous()
+        output = output.permute(0, 4, 1, 2, 3).contiguous()  # [B, N, C, F_s, T]
 
         return output
 
     @staticmethod
     def _reduce_complexity_separately(sub_band_input, full_band_output, device):
         """
+        Group Dropout for FullSubNet
 
         Args:
             sub_band_input: [60, 257, 1, 33, 200]
@@ -85,67 +90,38 @@ class BaseModel(nn.Module):
         return torch.cat(final_selected, dim=0)
 
     @staticmethod
-    def sband_forgetting_norm(input, train_sample_length):
+    def forgetting_norm(input, sample_length=192):
         """
-        与 forgetting norm相同，但使用拼接后模型的中间频带来计算均值
-        效果不好
-        Args:
-            input:
-            train_sample_length:
-
-        Returns:
-
-        """
-        assert input.ndim == 3
-        batch_size, n_freqs, n_frames = input.size()
-
-        eps = 1e-10
-        alpha = (train_sample_length - 1) / (train_sample_length + 1)
-        mu = 0
-        mu_list = []
-
-        for idx in range(input.shape[-1]):
-            if idx < train_sample_length:
-                alp = torch.min(torch.tensor([(idx - 1) / (idx + 1), alpha]))
-                mu = alp * mu + (1 - alp) * torch.mean(input[:, :, idx], dim=1).reshape(batch_size, 1)  # [B, 1]
-            else:
-                mu = alpha * mu + (1 - alpha) * input[:, (n_freqs // 2 - 1), idx].reshape(batch_size, 1)
-
-            mu_list.append(mu)
-
-            # print("input", input[:, :, idx].min(), input[:, :, idx].max(), input[:, :, idx].mean())
-            # print(f"alp {idx}: ", alp)
-            # print(f"mu {idx}: {mu[128, 0]}")
-
-        mu = torch.stack(mu_list, dim=-1)  # [B, 1, T]
-        input = input / (mu + eps)
-        return input
-
-    @staticmethod
-    def forgetting_norm(input, sample_length_in_training):
-        """
-        输入为三维，通过不断估计邻近的均值来作为当前 norm 时的均值
+        Using the mean value of the near frames to normalization
 
         Args:
-            input: [B, F, T]
-            sample_length_in_training: 训练时的长度，用于计算平滑因子
+            input: feature
+            sample_length: length of the training sample, used for calculating smooth factor
 
         Returns:
+            normed feature
 
+        Shapes:
+            input: [B, C, F, T]
+            sample_length_in_training: 192
         """
-        assert input.ndim == 3
-        batch_size, n_freqs, n_frames = input.size()
+        assert input.ndim == 4
+        batch_size, num_channels, num_freqs, num_frames = input.size()
+        input = input.reshape(batch_size, num_channels * num_freqs, num_frames)
+
         eps = 1e-10
         mu = 0
-        alpha = (sample_length_in_training - 1) / (sample_length_in_training + 1)
+        alpha = (sample_length - 1) / (sample_length + 1)
 
         mu_list = []
-        for idx in range(input.shape[-1]):
-            if idx < sample_length_in_training:
-                alp = torch.min(torch.tensor([(idx - 1) / (idx + 1), alpha]))
-                mu = alp * mu + (1 - alp) * torch.mean(input[:, :, idx], dim=1).reshape(batch_size, 1)  # [B, 1]
+        # TODO bugs
+        # TODO 是否需要修改为包含F的计算方法？
+        for frame_idx in range(num_frames):
+            if frame_idx < sample_length:
+                alp = torch.min(torch.tensor([(frame_idx - 1) / (frame_idx + 1), alpha]))
+                mu = alp * mu + (1 - alp) * torch.mean(input[:, :, frame_idx], dim=1).reshape(batch_size, 1)  # [B, 1]
             else:
-                current_frame_mu = torch.mean(input[:, :, idx], dim=1).reshape(batch_size, 1)  # [B, 1]
+                current_frame_mu = torch.mean(input[:, :, frame_idx], dim=1).reshape(batch_size, 1)  # [B, 1]
                 mu = alpha * mu + (1 - alpha) * current_frame_mu
 
             mu_list.append(mu)
@@ -155,8 +131,10 @@ class BaseModel(nn.Module):
             # print(f"mu {idx}: {mu[128, 0]}")
 
         mu = torch.stack(mu_list, dim=-1)  # [B, 1, T]
-        input = input / (mu + eps)
-        return input
+        output = input / (mu + eps)
+
+        output = output.reshape(batch_size, num_channels, num_freqs, num_frames)
+        return output
 
     @staticmethod
     def hybrid_norm(input, sample_length_in_training=192):
@@ -215,7 +193,7 @@ class BaseModel(nn.Module):
             [B, C, F, T]
         """
         # utterance-level mu
-        mu = torch.mean(input, dim=(1, 2, 3), keepdim=True)
+        mu = torch.mean(input, dim=list(range(1, input.dim())), keepdim=True)
 
         normed = input / (mu + 1e-5)
 
@@ -321,6 +299,8 @@ class BaseModel(nn.Module):
             norm = self.offline_gaussian_norm
         elif norm_type == "cumulative_layer_norm":
             norm = self.cumulative_layer_norm
+        elif norm_type == "forgetting_norm":
+            norm = self.forgetting_norm
         else:
             raise NotImplementedError("You must set up a type of Norm. "
                                       "e.g. offline_laplace_norm, cumulative_laplace_norm, forgetting_norm, etc.")

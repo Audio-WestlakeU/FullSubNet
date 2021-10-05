@@ -19,16 +19,20 @@ Git repository is the ICASSP 2021 Dataset. You need to check out the default bra
 First, we need to enter a directory named after the dataset, such as `dns_interspeech_2020`. Then, we can call the default training configuration:
 
 ```shell
+# enter a directory named after the dataset, such as dns_interspeech_2020
 cd FullSubNet/recipes/dns_interspeech_2020
 
 # Use a default config and two GPUs to train the FullSubNet model
-CUDA_VISIABLE_DEVICES=0,1 python train.py -C fullsubnet/train.toml -N 2
+CUDA_VISIABLE_DEVICES=0,1
+python -m torch.distributed.run --standalone --nnodes=1 --nproc_per_node=2 train.py -C fullsubnet/train.toml
 
 # Use default config and one GPU to train the Fullband baseline model
-CUDA_VISIABLE_DEVICES=0 python train.py -C fullband_baseline/train.toml -N 1
+CUDA_VISIABLE_DEVICES=0
+python -m torch.distributed.run --standalone --nnodes=1 --nproc_per_node=1 train.py -C fullband_baseline/train.toml
 
 # Resume the experiment using "-R" parameter
-CUDA_VISIABLE_DEVICES=0,1 python train.py -C fullband_baseline/train.toml -N 2 -R
+CUDA_VISIABLE_DEVICES=0,1
+python -m torch.distributed.run --standalone --nnodes=1 --nproc_per_node=2 train.py -C fullband_baseline/train.toml -R
 ```
 
 See more details in `FullSubNet/recipes/dns_interspeech_2020/train.py` and `FullSubNet/recipes/dns_interspeech_2020/**/train.toml`.
@@ -38,9 +42,9 @@ See more details in `FullSubNet/recipes/dns_interspeech_2020/train.py` and `Full
 The logs during the training will be stored, and we can visualize it using TensorBoard. Assuming that:
 
 - The file path of the training configuration is `FullSubNet/recipes/dns_interspeech_2020/fullsubnet/train.toml`
-- In the training configuration, the key `save_dir` is `"~/Experiments/FullSubNet"`
+- In the training configuration, the key `save_dir` has a value `"~/Experiments/FullSubNet"`
 
-Then the log information will be stored in the `~/Experiments/FullSubNet/train` directory. This directory contains the following:
+Then, the log information will be stored in the `~/Experiments/FullSubNet/train` directory. This directory contains the following:
 
 - `logs/` directory: store the TensorBoard related data, including loss curves, audio files, and spectrogram figures.
 - `checkpoints/` directory: stores all checkpoints during training, from which you can resume the training or start an inference.

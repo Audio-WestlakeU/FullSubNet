@@ -1,3 +1,4 @@
+import shutil
 import time
 from functools import partial
 from pathlib import Path
@@ -26,14 +27,13 @@ console = Console()
 
 class BaseTrainer:
     def __init__(self, dist, rank, config, resume, only_validation, model, loss_function, optimizer):
-        torch.cuda.set_device(rank)
         self.model = DistributedDataParallel(model.cuda(rank), device_ids=[rank])
         self.optimizer = optimizer
         self.loss_function = loss_function
 
         # DistributedDataParallel (DDP)
-        self.rank = rank
         self.dist = dist
+        self.rank = rank
 
         # 可能由于 K80，或者 cuda 的问题吧
         torch.backends.cudnn.enabled = config["meta"]["cudnn_enable"]
@@ -78,6 +78,7 @@ class BaseTrainer:
         self.save_dir = Path(config["meta"]["save_dir"]).expanduser().absolute() / config["meta"]["experiment_name"]
         self.checkpoints_dir = self.save_dir / "checkpoints"
         self.logs_dir = self.save_dir / "logs"
+        self.source_code_dir = Path(__file__).expanduser().absolute().parent.parent.parent
 
         if resume:
             self._resume_checkpoint()
@@ -86,7 +87,7 @@ class BaseTrainer:
         self.only_validation = only_validation
 
         if config["meta"]["preloaded_model_path"]:
-            self._preload_model(Path(config["meta"]["preloaded_model_path"]))
+            self._preload_model(Path(config["preloaded_model_path"]))
 
         if self.rank == 0:
             prepare_empty_dir([self.checkpoints_dir, self.logs_dir], resume=resume)
@@ -101,8 +102,15 @@ class BaseTrainer:
             print("The configurations are as follows: ")
             print(config)  # except "\n"
 
-            with open((self.save_dir / f"{time.strftime('%Y-%m-%d %H:%M:%S')}.toml").as_posix(), "w") as handle:
+            # Backup of config
+            with open((self.save_dir / f"{time.strftime('%Y-%m-%d-%H-%M-%S')}.toml").as_posix(), "w") as handle:
                 toml.dump(config, handle)
+
+            # Backup of project code
+            shutil.copytree(
+                src=self.source_code_dir.as_posix(),
+                dst=(self.save_dir / f"{time.strftime('%Y-%m-%d-%H-%M-%S')}").as_posix()
+            )
 
             self._print_networks([self.model])
 
@@ -259,7 +267,7 @@ class BaseTrainer:
         Notes:
             1. You can register other metrics, but STOI and WB_PESQ metrics must be existence. These two metrics are
              used for checking if the current epoch is a "best epoch."
-            2. If you want to use a new metric, you must register it in "util.metrics" file.
+            2. If you want to use a new metric, you must register it in "utile.
         """
         assert "STOI" in metrics_list and "WB_PESQ" in metrics_list, "'STOI' and 'WB_PESQ' must be exist."
 

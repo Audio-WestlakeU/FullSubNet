@@ -59,18 +59,18 @@ class ExecutionTime:
 
 def initialize_module(path: str, args: dict = None, initialize: bool = True):
     """
-    Load module dynamically with "args".
+    Load module or function dynamically with "args".
 
     Args:
         path: module path in this project.
-        args: parameters that passes to the Class or the Function in the module.
-        initialize: initialize the Class or the Function with args.
+        args: parameters that will be passed to the Class or the Function in the module.
+        initialize: whether to initialize the Class or the Function with args.
 
     Examples:
         Config items are as follows：
 
             [model]
-            path = "model.full_sub_net.FullSubNetModel"
+            path = "model.FullSubNetModel"
             [model.args]
             n_frames = 32
             ...

@@ -5,7 +5,6 @@ from tqdm import tqdm
 
 from audio_zen.trainer.base_trainer import BaseTrainer
 from audio_zen.acoustics.mask import build_complex_ideal_ratio_mask, decompress_cIRM
-from audio_zen.acoustics.feature import mag_phase
 
 plt.switch_backend('agg')
 
@@ -19,17 +18,15 @@ class Trainer(BaseTrainer):
     def _train_epoch(self, epoch):
         loss_total = 0.0
 
-        for noisy, clean in tqdm(self.train_dataloader, desc=f"Training {self.rank}"):
+        for noisy, clean in tqdm(self.train_dataloader, desc="Training") if self.rank == 0 else self.train_dataloader:
             self.optimizer.zero_grad()
 
             noisy = noisy.to(self.rank)
             clean = clean.to(self.rank)
 
-            noisy_complex = self.torch_stft(noisy)
-            clean_complex = self.torch_stft(clean)
-
-            noisy_mag, _ = mag_phase(noisy_complex)
-            cIRM = build_complex_ideal_ratio_mask(noisy_complex, clean_complex)  # [B, F, T, 2]
+            noisy_mag, noisy_phase, noisy_real, noisy_imag = self.torch_stft(noisy)
+            _, _, clean_real, clean_imag = self.torch_stft(clean)
+            cIRM = build_complex_ideal_ratio_mask(noisy_real, noisy_imag, clean_real, clean_imag)  # [B, F, T, 2]
 
             with autocast(enabled=self.use_amp):
                 # [B, F, T] => [B, 1, F, T] => model => [B, 2, F, T] => [B, F, T, 2]
@@ -72,11 +69,9 @@ class Trainer(BaseTrainer):
             noisy = noisy.to(self.rank)
             clean = clean.to(self.rank)
 
-            noisy_complex = self.torch_stft(noisy)
-            clean_complex = self.torch_stft(clean)
-
-            noisy_mag, _ = mag_phase(noisy_complex)
-            cIRM = build_complex_ideal_ratio_mask(noisy_complex, clean_complex)  # [B, F, T, 2]
+            noisy_mag, noisy_phase, noisy_real, noisy_imag = self.torch_stft(noisy)
+            _, _, clean_real, clean_imag = self.torch_stft(clean)
+            cIRM = build_complex_ideal_ratio_mask(noisy_real, noisy_imag, clean_real, clean_imag)  # [B, F, T, 2]
 
             noisy_mag = noisy_mag.unsqueeze(1)
             cRM = self.model(noisy_mag)
@@ -86,10 +81,9 @@ class Trainer(BaseTrainer):
 
             cRM = decompress_cIRM(cRM)
 
-            enhanced_real = cRM[..., 0] * noisy_complex.real - cRM[..., 1] * noisy_complex.imag
-            enhanced_imag = cRM[..., 1] * noisy_complex.real + cRM[..., 0] * noisy_complex.imag
-            enhanced_complex = torch.stack((enhanced_real, enhanced_imag), dim=-1)
-            enhanced = self.torch_istft(enhanced_complex, length=noisy.size(-1))
+            enhanced_real = cRM[..., 0] * noisy_real - cRM[..., 1] * noisy_imag
+            enhanced_imag = cRM[..., 1] * noisy_real + cRM[..., 0] * noisy_imag
+            enhanced = self.torch_istft((enhanced_real, enhanced_imag), length=noisy.size(-1), input_type="real_imag")
 
             noisy = noisy.detach().squeeze(0).cpu().numpy()
             clean = clean.detach().squeeze(0).cpu().numpy()

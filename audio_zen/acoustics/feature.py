@@ -1,5 +1,5 @@
-import math
 import os
+from functools import partial
 
 import librosa
 import numpy as np
@@ -9,87 +9,78 @@ import torch.nn as nn
 
 def stft(y, n_fft, hop_length, win_length):
     """
+    Wrapper of the official torch.stft for single-channel and multi-channel
+
     Args:
-        y: [B, F, T]
+        y: single- or multi-channel speech with shape of [B, C, T] or [B, T]
         n_fft: num of FFT
         hop_length: hop length
-        win_length: window length
+        win_length: hanning window size
+
+    Shapes:
+        mag: [B, F, T] if dims of input is [B, T], whereas [B, C, F, T] if dims of input is [B, C, T]
 
     Returns:
-        [B, F, T], **complex-valued** STFT coefficients
-
+        mag, phase, real and imag with the same shape of [B, F, T] (**complex-valued** STFT coefficients)
     """
-    assert y.dim() == 2
-    return torch.stft(
-        y,
-        n_fft,
-        hop_length,
-        win_length,
-        window=torch.hann_window(n_fft).to(y.device),
-        return_complex=True
-    )
+    num_dims = y.dim()
+    assert num_dims == 2 or num_dims == 3, "Only support 2D or 3D Input"
+
+    batch_size = y.shape[0]
+    num_samples = y.shape[-1]
+
+    if num_dims == 3:
+        y = y.reshape(-1, num_samples)
+
+    complex_stft = torch.stft(y, n_fft, hop_length, win_length, window=torch.hann_window(n_fft, device=y.device),
+                              return_complex=True)
+    _, num_freqs, num_frames = complex_stft.shape
+
+    if num_dims == 3:
+        complex_stft = complex_stft.reshape(batch_size, -1, num_freqs, num_frames)
+
+    mag, phase = torch.abs(complex_stft), torch.angle(complex_stft)
+    real, imag = complex_stft.real, complex_stft.imag
+    return mag, phase, real, imag
 
 
-def istft(features, n_fft, hop_length, win_length, length=None, use_mag_phase=False):
+def istft(features, n_fft, hop_length, win_length, length=None, input_type="complex"):
     """
-    Wrapper for the official torch.istft
+    Wrapper of the official torch.istft
 
     Args:
-        features: [B, F, T, 2] (complex) or ([B, F, T], [B, F, T]) (mag and phase)
-        n_fft:
-        hop_length:
-        win_length:
-        device:
-        length:
-        use_mag_phase: use mag and phase as inputs of iSTFT
+        features: [B, F, T] (complex) or ([B, F, T], [B, F, T]) (mag and phase)
+        n_fft: num of FFT
+        hop_length: hop length
+        win_length: hanning window size
+        length: expected length of istft
+        use_mag_phase: use mag and phase as the input ("features")
 
     Returns:
-        [B, T]
+        single-channel speech of shape [B, T]
     """
-    if use_mag_phase:
-        # (mag, phase) or [mag, phase]
+    if input_type == "real_imag":
+        # the feature is (real, imag) or [real, imag]
+        assert isinstance(features, tuple) or isinstance(features, list)
+        real, imag = features
+        features = torch.complex(real, imag)
+    elif input_type == "complex":
+        assert isinstance(features, torch.ComplexType)
+    elif input_type == "mag_phase":
+        # the feature is (mag, phase) or [mag, phase]
         assert isinstance(features, tuple) or isinstance(features, list)
         mag, phase = features
-        features = torch.stack([mag * torch.cos(phase), mag * torch.sin(phase)], dim=-1)
+        features = torch.complex(mag * torch.cos(phase), mag * torch.sin(phase))
+    else:
+        raise NotImplementedError("Only 'real_imag', 'complex', and 'mag_phase' are supported")
 
-    return torch.istft(
-        features,
-        n_fft,
-        hop_length,
-        win_length,
-        window=torch.hann_window(n_fft).to(features.device),
-        length=length
-    )
-
-
-def mc_stft(y_s, n_fft, hop_length, win_length):
-    """
-    Multi-Channel STFT
-
-    Shape:
-        y_s: [B, C, T]
-
-    Returns:
-        complex_value: [B, C, F, T]
-    """
-    assert y_s.dim() == 3
-    batch_size, num_channels, num_wav_samples = y_s.size()
-
-    # [B * C, F, T] in C
-    stft_coefficients = torch.stft(
-        y_s.reshape(batch_size * num_channels, num_wav_samples),  # [B * C, T]
-        n_fft=n_fft,
-        hop_length=hop_length,
-        window=torch.hann_window(win_length, device=y_s.device),
-        win_length=win_length,
-        return_complex=True
-    )
-
-    return stft_coefficients.reshape(batch_size, num_channels, stft_coefficients.shape[-2], stft_coefficients.shape[-1])
+    return torch.istft(features, n_fft, hop_length, win_length, window=torch.hann_window(n_fft, device=features.device),
+                       length=length)
 
 
 def mag_phase(complex_tensor):
-    return torch.abs(complex_tensor), torch.angle(complex_tensor)
+    mag, phase = torch.abs(complex_tensor), torch.angle(complex_tensor)
+    return mag, phase
 
 
 def norm_amplitude(y, scalar=None, eps=1e-6):
@@ -248,6 +239,56 @@ def activity_detector(audio, fs=16000, activity_threshold=0.13, target_level=-25
     return perc_active
 
 
+def batch_shuffle_frequency(tensor, indices=None):
+    """
+
+    Randomly shuffle frequency of a spectrogram and return shuffle indices.
+
+    Args:
+        tensor: input tensor with batch dim
+        indices:
+
+    Examples:
+        input =
+            tensor([[[[1., 1., 1.],
+                      [2., 2., 2.],
+                      [3., 3., 3.],
+                      [4., 4., 4.]]],
+                    [[[1., 1., 1.],
+                      [2., 2., 2.],
+                      [3., 3., 3.],
+                      [4., 4., 4.]]]])
+
+        output =
+            tensor([[[[3., 3., 3.],
+                      [4., 4., 4.],
+                      [2., 2., 2.],
+                      [1., 1., 1.]]],
+                    [[[3., 3., 3.],
+                      [2., 2., 2.],
+                      [1., 1., 1.],
+                      [4., 4., 4.]]]])
+
+    Shapes:
+        tensor: [B, C, F, T]
+        out: [B, C, F T]
+        indices: [B, C, F, T]
+
+    Returns:
+        out: after frequency shuffle
+        indices: shuffle matrix
+    """
+    assert tensor.ndim == 4
+    batch_size, num_channels, num_freqs, num_frames = tensor.shape
+
+    if not torch.is_tensor(indices):
+        indices = torch.stack([torch.randperm(num_freqs, device=tensor.device) for _ in range(batch_size)], dim=0)
+        indices = indices[:, None, :, None].repeat(1, num_channels, 1, num_frames)
+
+    out = torch.gather(tensor, dim=2, index=indices)
+    return out, indices
+
+
 def drop_band(input, num_groups=2):
     """
     Reduce computational complexity of the sub-band part in the FullSubNet model.
@@ -280,135 +321,6 @@ def drop_band(input, num_groups=2):
         output.append(selected)
 
     return torch.cat(output, dim=0)
-
-
-def init_stft_kernel(frame_len,
-                     frame_hop,
-                     num_fft=None,
-                     window="sqrt_hann"):
-    if window != "sqrt_hann":
-        raise RuntimeError("Now only support sqrt hanning window in order "
-                           "to make signal perfectly reconstructed")
-    if not num_fft:
-        # FFT points
-        fft_size = 2 ** math.ceil(math.log2(frame_len))
-    else:
-        fft_size = num_fft
-    # window [window_length]
-    window = torch.hann_window(frame_len) ** 0.5
-    S_ = 0.5 * (fft_size * fft_size / frame_hop) ** 0.5
-    # window_length, F, 2 (real+imag)
-    kernel = torch.rfft(torch.eye(fft_size) / S_, 1)[:frame_len]
-    # 2, F, window_length
-    kernel = torch.transpose(kernel, 0, 2) * window
-    # 2F, 1, window_length
-    kernel = torch.reshape(kernel, (fft_size + 2, 1, frame_len))
-    return kernel
-
-
-class CustomSTFTBase(nn.Module):
-    """
-    Base layer for (i)STFT
-    NOTE:
-        1) Recommend sqrt_hann window with 2**N frame length, because it
-           could achieve perfect reconstruction after overlap-add
-        2) Now haven't consider padding problems yet
-    """
-
-    def __init__(self,
-                 frame_len,
-                 frame_hop,
-                 window="sqrt_hann",
-                 num_fft=None):
-        super(CustomSTFTBase, self).__init__()
-        K = init_stft_kernel(
-            frame_len,
-            frame_hop,
-            num_fft=num_fft,
-            window=window)
-        self.K = nn.Parameter(K, requires_grad=False)
-        self.stride = frame_hop
-        self.window = window
-
-    def freeze(self):
-        self.K.requires_grad = False
-
-    def unfreeze(self):
-        self.K.requires_grad = True
-
-    def check_nan(self):
-        num_nan = torch.sum(torch.isnan(self.K))
-        if num_nan:
-            raise RuntimeError(
-                "detect nan in STFT kernels: {:d}".format(num_nan))
-
-    def extra_repr(self):
-        return "window={0}, stride={1}, requires_grad={2}, kernel_size={3[0]}x{3[2]}".format(
-            self.window, self.stride, self.K.requires_grad, self.K.shape)
-
-
-class CustomSTFT(CustomSTFTBase):
-    """
-    Short-time Fourier Transform as a Layer
-    """
-
-    def __init__(self, *args, **kwargs):
-        super(CustomSTFT, self).__init__(*args, **kwargs)
-
-    def forward(self, x):
-        """
-        Accept raw waveform and output magnitude and phase
-        x: input signal, N x 1 x S or N x S
-        m: magnitude, N x F x T
-        p: phase, N x F x T
-        """
-        if x.dim() not in [2, 3]:
-            raise RuntimeError("Expect 2D/3D tensor, but got {:d}D".format(
-                x.dim()))
-        self.check_nan()
-        # if N x S, reshape N x 1 x S
-        if x.dim() == 2:
-            x = torch.unsqueeze(x, 1)
-        # N x 2F x T
-        c = torch.nn.functional.conv1d(x, self.K, stride=self.stride, padding=0)
-        # N x F x T
-        r, i = torch.chunk(c, 2, dim=1)
-        m = (r ** 2 + i ** 2) ** 0.5
-        p = torch.atan2(i, r)
-        return m, p, r, i
-
-
-class CustomISTFT(CustomSTFTBase):
-    """
-    Inverse Short-time Fourier Transform as a Layer
-    """
-
-    def __init__(self, *args, **kwargs):
-        super(CustomISTFT, self).__init__(*args, **kwargs)
-
-    def forward(self, m, p, squeeze=False):
-        """
-        Accept phase & magnitude and output raw waveform
-        m, p: N x F x T
-        s: N x C x S
-        """
-        if p.dim() != m.dim() or p.dim() not in [2, 3]:
-            raise RuntimeError("Expect 2D/3D tensor, but got {:d}D".format(
-                p.dim()))
-        self.check_nan()
-        # if F x T, reshape 1 x F x T
-        if p.dim() == 2:
-            p = torch.unsqueeze(p, 0)
-            m = torch.unsqueeze(m, 0)
-        r = m * torch.cos(p)
-        i = m * torch.sin(p)
-        # N x 2F x T
-        c = torch.cat([r, i], dim=1)
-        # N x 2F x T
-        s = torch.nn.functional.conv_transpose1d(c, self.K, stride=self.stride, padding=0)
-        if squeeze:
-            s = torch.squeeze(s)
-        return s
 
 
 class ChannelWiseLayerNorm(nn.LayerNorm):
@@ -451,8 +363,12 @@ class DirectionalFeatureComputer(nn.Module):
         self.input_features = input_features
 
         # STFT setting
-        self.stft = CustomSTFT(frame_len=win_length, frame_hop=hop_length, num_fft=n_fft)
+        self.n_fft = n_fft
+        self.win_length = win_length
+        self.hop_length = hop_length
         self.num_freqs = n_fft // 2 + 1
+        self.stft = partial(torch.stft, n_fft=n_fft, win_length=win_length, hop_length=hop_length)
+        self.istft = partial(torch.istft, n_fft=n_fft, win_length=win_length, hop_length=hop_length)
 
         # IPD setting
         self.mic_pairs = np.array(mic_pairs)
@@ -485,7 +401,7 @@ class DirectionalFeatureComputer(nn.Module):
         sin_ipd = torch.sin(phase[:, self.ipd_left] - phase[:, self.ipd_right])
         return cos_ipd, sin_ipd
 
-    def forward(self, y):
+    def forward(self, magnitude, phase, real, imag):
         """
         Args:
             y: input mixture waveform with shape [B, M, T]
@@ -502,15 +418,7 @@ class DirectionalFeatureComputer(nn.Module):
         Returns:
             Spatial features and directional features of shape [B, ?, K]
         """
-        batch_size, num_channels, num_samples = y.shape
-        y = y.view(-1, num_samples)  # [B * M, T]
-        magnitude, phase, real, imag = self.stft(y)
-        _, num_freqs, num_frames = phase.shape  # [B * M, F, K]
-
-        magnitude = magnitude.view(batch_size, num_channels, num_freqs, num_frames)
-        phase = phase.view(batch_size, num_channels, num_freqs, num_frames)
-        real = real.view(batch_size, num_channels, num_freqs, num_frames)
-        imag = imag.view(batch_size, num_channels, num_freqs, num_frames)
+        batch_size, num_channels, num_freqs, num_frames = magnitude.shape
 
         directional_feature = []
         if "LPS" in self.input_features:
@@ -529,7 +437,7 @@ class DirectionalFeatureComputer(nn.Module):
 
         directional_feature = torch.cat(directional_feature, dim=1)
 
-        return directional_feature, magnitude, phase, real, imag
+        return directional_feature
 
 
 class ChannelDirectionalFeatureComputer(nn.Module):
@@ -630,6 +538,38 @@ class ChannelDirectionalFeatureComputer(nn.Module):
         return directional_feature, magnitude, phase, real, imag
 
 
+def hz_to_bark(hz):
+    return 26.81 / (1 + 1960. / hz) - 0.53
+
+
+def bark_to_hz(bark):
+    return 1960. / (26.81 / (0.53 + bark) - 1)
+
+
+def bark_filter_bank(num_filters, n_fft, sr, low_freq, high_freq):
+    high_freq = high_freq or sr / 2
+    assert high_freq <= sr / 2, "highfreq is greater than samplerate/2"
+
+    low_bark = hz_to_bark(low_freq)
+    high_bark = hz_to_bark(high_freq)
+    barkpoints = np.linspace(low_bark, high_bark, num_filters + 2)
+    bin = np.floor((n_fft + 1) * bark_to_hz(barkpoints) / sr)
+    # bin = np.array(
+    #     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 34, 36, 38, 40, 42,
+    #      44, 46, 48, 56, 64, 72, 80, 92, 104, 116, 128, 144, 160, 176, 192, 208, 232, 256])
+
+    print(bin.shape)
+
+    fbank = np.zeros([num_filters, n_fft // 2 + 1])
+    for j in range(0, num_filters):
+        print(j)
+        for i in range(int(bin[j]), int(bin[j + 1])):
+            fbank[j, i] = (i - bin[j]) / (bin[j + 1] - bin[j])
+        for i in range(int(bin[j + 1]), int(bin[j + 2])):
+            fbank[j, i] = (bin[j + 2] - i) / (bin[j + 2] - bin[j + 1])
+    return fbank
+
+
 if __name__ == '__main__':
-    ipt = torch.rand(70, 1, 257, 200)
-    print(drop_band(ipt, 8).shape)
+    fband = bark_filter_bank(56, 512, 16000, 100, 8000)
+    print(fband.shape)

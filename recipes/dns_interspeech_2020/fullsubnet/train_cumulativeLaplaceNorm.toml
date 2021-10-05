@@ -1,7 +1,7 @@
 [meta]
-save_dir = "~/Experiments/Fullband_Baseline"
+save_dir = "~/Experiments/FullSubNet/"
 description = "This is a description of FullSubNet experiment."
-seed = 0
+seed = 0  # set random seed for random, numpy, pytorch-gpu and pytorch-cpu
 use_amp = true
 cudnn_enable = false
 
@@ -49,8 +49,8 @@ target_dB_FS_floating_value = 10
 
 
 [train_dataset.dataloader]
-batch_size = 100
-num_workers = 40
+batch_size = 48
+num_workers = 48
 drop_last = true
 pin_memory = false
 
@@ -66,16 +66,21 @@ sr = 16000
 
 
 [model]
-path = "model.Model"
+path = "fullsubnet.model.Model"
 
 [model.args]
+sb_num_neighbors = 15
+fb_num_neighbors = 0
 num_freqs = 257
-hidden_size = 512
-sequence_model = "LSTM"
-output_activate_function = false
 look_ahead = 2
-norm_type = "offline_laplace_norm"
-weight_init = true
+sequence_model = "LSTM"
+fb_output_activate_function = "ReLU"
+sb_output_activate_function = false
+fb_model_hidden_size = 512
+sb_model_hidden_size = 384
+weight_init = false
+norm_type = "cumulative_laplace_norm"
+num_groups_in_drop_band = 2
 
 
 [trainer]
@@ -83,10 +88,10 @@ path = "trainer.Trainer"
 [trainer.train]
 clip_grad_norm_value = 10
 epochs = 9999
-save_checkpoint_interval = 1
+save_checkpoint_interval = 2
 [trainer.validation]
 save_max_metric_score = true
-validation_interval = 1
+validation_interval = 2
 [trainer.visualization]
 metrics = ["WB_PESQ", "NB_PESQ", "STOI", "SI_SDR"]
 n_samples = 10

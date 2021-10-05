@@ -122,8 +122,7 @@ def mvdr_beamformer(
 
     psd_noise_inverse = noise_psd.inverse()
     w1 = FC.matmul(psd_noise_inverse, steering_vector)  # [B * F, C, 1]
-    w2 = FC.matmul(steering_vector.conj().transpose(2, 1),
-                   psd_noise_inverse)  # [B * F, 1, C] * [B * F, C, C] * [B * F, C， 1] = [B * F, 1, 1]
+    w2 = FC.matmul(steering_vector.conj().transpose(2, 1), psd_noise_inverse)  # [B * F, 1, C] * [B * F, C, C] * [B * F, C， 1] = [B * F, 1, 1]
     w2 = FC.matmul(w2, steering_vector)  # [B * F, 1, 1]
 
     w = w1 / w2  # [B * F, C, 1]

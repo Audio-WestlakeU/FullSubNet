@@ -18,8 +18,10 @@ path = "dataset_inference.Dataset"
 
 [dataset.args]
 dataset_dir_list = [
-    #    "/apdcephfs/share_976139/xianghao/Datasets_share_976139/DNS-INTERSPEECH-2020/datasets/test_set/synthetic/with_reverb/noisy",
-    "/apdcephfs/share_976139/xianghao/Datasets_share_976139/DNS-INTERSPEECH-2020/datasets/test_set/synthetic/no_reverb/noisy"
+#        "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/with_reverb/noisy",
+        "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/no_reverb/noisy",
+#    "/apdcephfs/share_976139/xianghao/Datasets_share_976139/DNS-INTERSPEECH-2020/datasets/test_set/synthetic/no_reverb/noisy"
+    # ~/Experiments/fullsubnet_best_model_58epochs.tar
 ]
 sr = 16000
 
