@@ -16,23 +16,23 @@ Git repository is the ICASSP 2021 Dataset. You need to check out the default bra
 
 ### Training
 
-First, we need to enter a directory named after the dataset, such as `dns_interspeech_2020`. Then, we can call the default training configuration:
+First, we need to enter a directory named after the dataset, such as `dns_interspeech_2020`. Then, we could call the default training configuration:
 
 ```shell
 # enter a directory named after the dataset, such as dns_interspeech_2020
 cd FullSubNet/recipes/dns_interspeech_2020
 
 # Use a default config and two GPUs to train the FullSubNet model
-CUDA_VISIABLE_DEVICES=0,1
-python -m torch.distributed.run --standalone --nnodes=1 --nproc_per_node=2 train.py -C fullsubnet/train.toml
+CUDA_VISIBLE_DEVICES=0,1
+torchrun --standalone --nnodes=1 --nproc_per_node=2 train.py -C fullsubnet/train.toml
 
 # Use default config and one GPU to train the Fullband baseline model
-CUDA_VISIABLE_DEVICES=0
-python -m torch.distributed.run --standalone --nnodes=1 --nproc_per_node=1 train.py -C fullband_baseline/train.toml
+CUDA_VISIBLE_DEVICES=0
+torchrun --standalone --nnodes=1 --nproc_per_node=1 train.py -C fullband_baseline/train.toml
 
 # Resume the experiment using "-R" parameter
-CUDA_VISIABLE_DEVICES=0,1
-python -m torch.distributed.run --standalone --nnodes=1 --nproc_per_node=2 train.py -C fullband_baseline/train.toml -R
+CUDA_VISIBLE_DEVICES=0,1
+torchrun --standalone --nnodes=1 --nproc_per_node=2 train.py -C fullband_baseline/train.toml -R
 ```
 
 See more details in `FullSubNet/recipes/dns_interspeech_2020/train.py` and `FullSubNet/recipes/dns_interspeech_2020/**/train.toml`.
@@ -101,7 +101,7 @@ Check more details of inference parameters in `FullSubNet/recipes/dns_interspeec
 Calculating metrics (SI_SDR, STOI, WB_PESQ, NB_PESQ, etc.) using the following command lines:
 
 ```shell
-# Switching path
+# Switch path
 cd FullSubNet
 
 # DNS-INTERSPEECH-2020

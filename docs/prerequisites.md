@@ -1,6 +1,6 @@
 # Prerequisites
 
-- Linux or macOS
+- Linux-based system
 - Anaconda or Miniconda
 - NVIDIA GPU + CUDA CuDNN (CPU is **not** be supported)
 
@@ -9,7 +9,7 @@ The advantage of using conda instead of pip is that conda will ensure that you h
 
 ## Clone
 
-Firstly, you need to clone this repository:
+Firstly, clone this repository:
 
 ```shell
 git clone https://github.com/haoxiangsnr/FullSubNet
@@ -22,19 +22,18 @@ Install Anaconda or Miniconda, and then install conda and pip packages:
 
 ```shell
 # create a conda environment
-conda create --name FullSubNet python=3.8
+conda create --name FullSubNet python=3
 conda activate FullSubNet
 
 # install conda packages
-# ensure python=3.8, cudatoolkit=10.2, pytorch=1.7.1, torchaudio=0.7
-conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
+# ensure python=3.x, pytorch=1.10.x, torchaudio=0.10
+conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 conda install tensorboard joblib matplotlib
 
 # install pip packages
-# ensure librosa=0.8
 pip install Cython
 pip install librosa pesq pypesq pystoi tqdm toml mir_eval torch_complex rich
 
-# (Optional) if you have "mp3" format audio in your dataset, you need to install ffmpeg.
+# (Optional) if there are "mp3" format audio files in your dataset, you need to install ffmpeg.
 conda install -c conda-forge ffmpeg
 ```
