@@ -1,16 +1,18 @@
 # Getting Started
 
-## Dataset
+## Data
 
-### Deep Noise Suppression Challenge - INTERSPEECH 2020 (DNS-INTERSPEECH-2020)
+### Clean Speech and Noise
 
-The reported performance of the FullSuBNet in the paper is on this dataset.
-
-It consists of 65000 speech clips (the 30s per clip) and 65000 noise clips (10s per clip). You can download this dataset
+The reported performance of the FullSubNet in the paper is on the Deep Noise Suppression Challenge - INTERSPEECH 2020 (DNS-INTERSPEECH-2020). It consists of 65000 speech clips (the 30s per clip) and 65000 noise clips (10s per clip). You can download this dataset
 from [https://github.com/microsoft/DNS-Challenge.git](https://github.com/microsoft/DNS-Challenge.git).
 
 This Git repository contains the DNS Challenge dataset (INTERSPEECH 2020) and the newer DNS Challenge dataset (ICASSP 2021). The default branch of the
-Git repository is the ICASSP 2021 Dataset. You need to check out the default branch to the `interspeech2020` branch.
+Git repository is the ICASSP 2021 Dataset. Please check out the default branch to the `interspeech2020` branch if you would like to obtain the results reported in the paper.
+
+## Room Impulse Responses
+
+As mentioned in the paper, the room impulse responses (RIRs) come from the [Multichannel Impulse Response Databaset](https://www.eng.biu.ac.il/gannot/downloads/) and [the Reverb Challenge dataset](http://reverb2014.dereverberation.com/). For your convenience, we have separated and organized these RIRs. You can download them from the [Releases page (https://github.com/haoxiangsnr/FullSubNet/releases).
 
 ## Usage
 
