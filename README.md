@@ -1,22 +1,26 @@
-# FullSubNet
+<div align="center">
+    <h1>
+        FullSubNet
+    </h1>
+    <p>
+    Official PyTorch implementation of <em>FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement</em>, ICASSP 2021.
+    </p>
+    <a href="https://github.com/haoxiangsnr/FullSubNet/"><img src="https://img.shields.io/badge/Platform-linux-lightgrey" alt="version"></a>
+    <a href="https://github.com/haoxiangsnr/FullSubNet/"><img src="https://img.shields.io/github/stars/haoxiangsnr/FullSubNet?color=yellow&amp;label=FullSubNet&amp;logo=github" alt="Generic badge"></a>
+    <a href='https://fullsubnet.readthedocs.io/en/latest/?badge=latest'>
+        <img src='https://readthedocs.org/projects/fullsubnet/badge/?version=latest' alt='Documentation Status' />
+    </a>
+    <a href="https://github.com/haoxiangsnr/FullSubNet/"><img src="https://img.shields.io/badge/Python-%3E%3D3.8.0-orange" alt="version"></a>
+    <a href="https://github.com/haoxiangsnr/FullSubNet/"><img src="https://img.shields.io/badge/PyTorch-%3E%3D1.10-brightgreen" alt="python"></a>
+    <a href="https://github.com/haoxiangsnr/FullSubNet/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="mit"></a>
+</div>
 
-![Platform](https://img.shields.io/badge/Platform-linux-lightgrey)
-![Python version](https://img.shields.io/badge/Python-%3E%3D3.8.0-orange)
-![Pytorch Version](https://img.shields.io/badge/PyTorch-%3E%3D1.10-brightgreen)
-![GitHub repo size](https://img.shields.io/github/repo-size/haoxiangsnr/FullSubNet)
-[![Documentation Status](https://readthedocs.org/projects/fullsubnet/badge/?version=latest)](https://fullsubnet.readthedocs.io/en/latest/?badge=latest)
+## Guides
 
-
-This Git repository for the official PyTorch implementation
-of ["FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement"](https://arxiv.org/abs/2010.15508), accepted
-to ICASSP 2021.
-
-:bulb:[[Demo\]](https://www.haoxiangsnr.com/demo/fullsubnet/) | :page_facing_up:[[PDF\]](https://arxiv.org/abs/2010.15508) | :floppy_disk:[[Model Checkpoint\]](https://github.com/haoxiangsnr/FullSubNet/releases)
-
-## Documentation
-
-- [Prerequisites](docs/prerequisites.md)
-- [Getting Started](docs/getting_started.md)
+- 📸 [Demo (audio clips)](https://www.haoxiangsnr.com/demo/fullsubnet)
+- 📖 [Documentation](https://fullsubnet.readthedocs.io/)
+- 📰 [Paper (PDF)](https://arxiv.org/abs/2010.15508)
+- 🎏 [Model Checkpoints](https://github.com/haoxiangsnr/FullSubNet/releases)
 
 ## Key Features
 
@@ -34,7 +38,7 @@ You can use all of these things:
 
 ## Citation
 
-If you use this code for your research, please consider citing:
+If you use this code for your research, please consider citeing:
 
 ```text
 @INPROCEEDINGS{hao2020fullsubnet,
@@ -49,4 +53,4 @@ If you use this code for your research, please consider citing:
 
 ## License
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/haoxiangsnr/FullSubNet/blob/main/LICENSE)
+This respository Under the [MIT license](LICENSE).

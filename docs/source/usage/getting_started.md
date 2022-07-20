@@ -12,7 +12,7 @@ Git repository is the ICASSP 2021 Dataset. Please check out the default branch t
 
 ## Room Impulse Responses
 
-As mentioned in the paper, the room impulse responses (RIRs) come from the [Multichannel Impulse Response Databaset](https://www.eng.biu.ac.il/gannot/downloads/) and [the Reverb Challenge dataset](http://reverb2014.dereverberation.com/). For your convenience, we have separated and organized these RIRs. You can download them from the [Releases page (https://github.com/haoxiangsnr/FullSubNet/releases).
+As mentioned in the paper, the room impulse responses (RIRs) come from the [Multichannel Impulse Response Databaset](https://www.eng.biu.ac.il/gannot/downloads/) and [the Reverb Challenge dataset](http://reverb2014.dereverberation.com/). For your convenience, we have separated and organized these RIRs. You can download them from the [Releases page](https://github.com/haoxiangsnr/FullSubNet/releases).
 
 ## Usage
 
