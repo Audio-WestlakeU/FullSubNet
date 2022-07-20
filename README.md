@@ -17,10 +17,11 @@
 
 ## Guides
 
-- 📸 [Demo (audio clips)](https://www.haoxiangsnr.com/demo/fullsubnet)
+- 📸 [Demo (Audio Clips)](https://www.haoxiangsnr.com/demo/fullsubnet)
 - 📖 [Documentation](https://fullsubnet.readthedocs.io/)
 - 📰 [Paper (PDF)](https://arxiv.org/abs/2010.15508)
 - 🎏 [Model Checkpoints](https://github.com/haoxiangsnr/FullSubNet/releases)
+- 📹 [Presentation (YouTube)](https://youtu.be/XJeE-MWDlk0)
 
 ## Key Features
 
