@@ -24,7 +24,6 @@ The FullSubNet a full-band and sub-band fusion model for single-channel real-tim
   reference/conduct.md
   reference/changelog.md
 
-
 Indices and tables
 ------------------
 

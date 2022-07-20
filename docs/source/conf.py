@@ -1,11 +1,7 @@
-import importlib_metadata
-
 # -- Project information -----------------------------------------------------
 project = "FullSubNet"
 author = "HAO Xiang <haoxiangsnr@gmail.com>"
 project_copyright = "2022, HAO Xiang"
-release = importlib_metadata.version(project)
-version = ".".join(release.split(".")[:2])  # e.g., "0.3" stand for the major is "0" and the minor is "3"
 
 # -- MetaConfig configuration ---------------------------------------------------
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
