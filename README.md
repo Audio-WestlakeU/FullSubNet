@@ -10,16 +10,16 @@
     <a href='https://fullsubnet.readthedocs.io/en/latest/?badge=latest'>
         <img src='https://readthedocs.org/projects/fullsubnet/badge/?version=latest' alt='Documentation Status' />
     </a>
-    <a href="https://github.com/haoxiangsnr/FullSubNet/"><img src="https://img.shields.io/badge/Python-%3E%3D3.8.0-orange" alt="version"></a>
-    <a href="https://github.com/haoxiangsnr/FullSubNet/"><img src="https://img.shields.io/badge/PyTorch-%3E%3D1.10-brightgreen" alt="python"></a>
+    <a href="https://github.com/haoxiangsnr/FullSubNet/"><img src="https://img.shields.io/badge/Python-3.10-orange" alt="version"></a>
+    <a href="https://github.com/haoxiangsnr/FullSubNet/"><img src="https://img.shields.io/badge/PyTorch-1.11-brightgreen" alt="python"></a>
     <a href="https://github.com/haoxiangsnr/FullSubNet/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="mit"></a>
 </div>
 
 ## Guides
 
+- 📰 [Paper (PDF)](https://arxiv.org/abs/2010.15508)
 - 📸 [Demo (Audio Clips)](https://www.haoxiangsnr.com/demo/fullsubnet)
 - 📖 [Documentation](https://fullsubnet.readthedocs.io/)
-- 📰 [Paper (PDF)](https://arxiv.org/abs/2010.15508)
 - 🎏 [Model Checkpoints](https://github.com/haoxiangsnr/FullSubNet/releases)
 - 📹 [Presentation (YouTube)](https://youtu.be/XJeE-MWDlk0)
 
