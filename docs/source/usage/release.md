@@ -1,4 +1,4 @@
-# FullSubNet Checkpoints and RIRs
+# Checkpoints and RIRs
 
 ## Checkpoints
 

@@ -35,10 +35,12 @@ conda activate FullSubNet
 
 As recommended by the Anaconda official, you may install conda package first before installing other pip packages.
 Generally speaking, the CUDA version is not deterministic. You may choose the CUDA version you want.
-This project uses the `pytorch=1.11.0` as the default PyTorch version. Other PyTorch versions may work, but I haven't tested them.
+This project uses the latest `pytorch=1.12.0` as the default PyTorch version. Other PyTorch versions may work, but I haven't tested them.
 
 ```shell
-conda install pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cudatoolkit=11.3 -c pytorch
+conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
+
+conda install tensorboard joblib matplotlib -c conda-forge
 ```
 
 ### Install Pypi packages
@@ -47,7 +49,7 @@ conda install pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cudatoolkit
 # you may need to install Cython firstly
 pip install Cython
 
-pip install tensorboard joblib matplotlib librosa pesq pystoi tqdm toml mir_eval torch_complex rich
+pip install librosa tbb tensorboard joblib matplotlib pesq pystoi tqdm toml torch_complex rich
 
 # install pypesq directly from the GitHub repository
 pip install https://github.com/vBaiCai/python-pesq/archive/master.zip
