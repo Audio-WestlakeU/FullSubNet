@@ -6,14 +6,15 @@ from pathlib import Path
 import librosa
 from tqdm import tqdm
 
-sys.path.append(os.path.join(os.getcwd(), "recipes"))
-from audio_zen.acoustics.mask import is_clipped, load_wav, activity_detector
+from audio_zen.acoustics.feature import activity_detector, is_clipped, load_wav
 
+sys.path.append(os.path.join(os.getcwd(), "recipes"))
+
+# Candidates for dataset directories
 candidate_datasets = [
     "~/Datasets/DNS-Challenge-ICASSP/datasets/clean/german_speech/CC_BY_SA_4.0_249hrs_339spk_German_Wikipedia_16k",
     "~/Datasets/DNS-Challenge-ICASSP/datasets/clean/german_speech/M-AILABS_Speech_Dataset",
-
-]  # 候选数据集的目录，支持多个目录
+]
 dataset_limit = None
 dataset_offset = 0
 dist_file = Path("~/Datasets/DNS-Challenge-ICASSP/datasets/german_3s_0.6_30hrs.txt").expanduser().absolute()
@@ -32,7 +33,7 @@ def offset_and_limit(data_list, offset, limit):
     return data_list
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     """
     Returns
         scp txt file
@@ -80,7 +81,7 @@ if __name__ == '__main__':
         if accumulated_time >= (total_hrs * 3600):
             break
 
-    with open(dist_file.as_posix(), 'w') as f:
+    with open(dist_file.as_posix(), "w") as f:
         f.writelines(f"{file_path}\n" for file_path in output_wav_path_list)
 
     print("=" * 70)

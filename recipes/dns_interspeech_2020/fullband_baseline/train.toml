@@ -60,7 +60,7 @@ path = "dataset_validation.Dataset"
 [validation_dataset.args]
 dataset_dir_list = [
     "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/with_reverb/",
-    "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/no_reverb/"
+    "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/no_reverb/",
 ]
 sr = 16000
 

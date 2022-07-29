@@ -1,7 +1,7 @@
 [meta]
 save_dir = "~/Experiments/FullSubNet/"
 description = "This is a description of FullSubNet experiment."
-seed = 0  # set random seed for random, numpy, pytorch-gpu and pytorch-cpu
+seed = 0 # set random seed for random, numpy, pytorch-gpu and pytorch-cpu
 use_amp = true
 cudnn_enable = false
 
@@ -49,8 +49,8 @@ target_dB_FS_floating_value = 10
 
 
 [train_dataset.dataloader]
-batch_size = 48
-num_workers = 48
+batch_size = 32
+num_workers = 16
 drop_last = true
 pin_memory = false
 
@@ -60,7 +60,7 @@ path = "dataset_validation.Dataset"
 [validation_dataset.args]
 dataset_dir_list = [
     "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/with_reverb/",
-    "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/no_reverb/"
+    "~/Datasets/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/no_reverb/",
 ]
 sr = 16000
 

@@ -10,7 +10,7 @@ from torch.nn import functional
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from audio_zen.acoustics.feature import stft, istft
+from audio_zen.acoustics.feature import istft, stft
 from audio_zen.utils import initialize_module, prepare_device, prepare_empty_dir
 
 
@@ -44,7 +44,9 @@ class BaseInferencer:
         # See utils_backup.py
         self.torch_stft = partial(stft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length)
         self.torch_istft = partial(istft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length)
-        self.librosa_stft = partial(librosa.stft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length)
+        self.librosa_stft = partial(
+            librosa.stft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length
+        )
         self.librosa_istft = partial(librosa.istft, hop_length=self.hop_length, win_length=self.win_length)
 
         print("Configurations are as follows: ")
@@ -143,14 +145,16 @@ class BaseInferencer:
         模型的输入为带噪语音的 **幅度谱**，输出同样为 **幅度谱**
         """
         mixture_stft_coefficients = self.torch_stft(noisy)
-        mixture_mag = (mixture_stft_coefficients.real ** 2 + mixture_stft_coefficients.imag ** 2) ** 0.5
+        mixture_mag = (mixture_stft_coefficients.real**2 + mixture_stft_coefficients.imag**2) ** 0.5
 
         enhanced_mag = self.model(mixture_mag)
 
         # Phase of the reference channel
         reference_channel_stft_coefficients = mixture_stft_coefficients[:, 0, ...]
         noisy_phase = torch.atan2(reference_channel_stft_coefficients.imag, reference_channel_stft_coefficients.real)
-        complex_tensor = torch.stack([(enhanced_mag * torch.cos(noisy_phase)), (enhanced_mag * torch.sin(noisy_phase))], dim=-1)
+        complex_tensor = torch.stack(
+            [(enhanced_mag * torch.cos(noisy_phase)), (enhanced_mag * torch.sin(noisy_phase))], dim=-1
+        )
         enhanced = self.torch_istft(complex_tensor, length=noisy.shape[-1])
 
         enhanced = enhanced.detach().squeeze(0).cpu().numpy()
@@ -180,10 +184,11 @@ class BaseInferencer:
             noisy = noisy.detach().squeeze(0).numpy()
             if np.ndim(noisy) > 1:
                 noisy = noisy[0, :]  # first channel
-            noisy = noisy[:enhanced.shape[-1]]
+            noisy = noisy[: enhanced.shape[-1]]
             sf.write(self.noisy_dir / f"{name}.wav", noisy, samplerate=self.acoustic_config["sr"])
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     ipt = torch.rand(10, 1, 257, 100)
     opt = BaseInferencer._unfold_along_time(ipt, 30)
     print(opt.shape)

@@ -152,13 +152,13 @@ class Inferencer(BaseInferencer):
                 enhanced_chunk = enhanced_chunk[256:]
 
                 # Save the prior half chunk,
-                cur = enhanced_chunk[:chunk_length // 2]
+                cur = enhanced_chunk[: chunk_length // 2]
 
                 # only for the 1st chunk,no overlap for the very 1st chunk prior half
-                prev = enhanced_chunk[chunk_length // 2:] * win[chunk_length // 2:]
+                prev = enhanced_chunk[chunk_length // 2 :] * win[chunk_length // 2 :]
             else:
                 # use the previous noisy data as the pad
-                pad = noisy[:, (chunk_idx * chunk_hop_length - 256):(chunk_idx * chunk_hop_length)]
+                pad = noisy[:, (chunk_idx * chunk_hop_length - 256) : (chunk_idx * chunk_hop_length)]
 
                 chunk_start_position = chunk_idx * chunk_hop_length
                 chunk_end_position = chunk_start_position + chunk_length
@@ -169,18 +169,18 @@ class Inferencer(BaseInferencer):
                 enhanced_chunk = enhanced_chunk[256:]
 
                 # 使用这个窗函数来对拼接的位置进行平滑？
-                enhanced_chunk = enhanced_chunk * win[:len(enhanced_chunk)]
+                enhanced_chunk = enhanced_chunk * win[: len(enhanced_chunk)]
 
-                tmp = enhanced_chunk[:chunk_length // 2]
-                cur = tmp[:min(len(tmp), len(prev))] + prev[:min(len(tmp), len(prev))]
-                prev = enhanced_chunk[chunk_length // 2:]
+                tmp = enhanced_chunk[: chunk_length // 2]
+                cur = tmp[: min(len(tmp), len(prev))] + prev[: min(len(tmp), len(prev))]
+                prev = enhanced_chunk[chunk_length // 2 :]
 
             if enhanced is None:
                 enhanced = cur
             else:
                 enhanced = torch.cat((enhanced, cur), dim=0)
 
-        enhanced = enhanced[:noisy.shape[1]]
+        enhanced = enhanced[: noisy.shape[1]]
         return enhanced.detach().squeeze(0).cpu().numpy()
 
     @torch.no_grad()
@@ -190,6 +190,6 @@ class Inferencer(BaseInferencer):
         return enhanced.detach().squeeze().cpu().numpy()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     a = torch.rand(10, 2, 161, 200)
     print(cumulative_norm(a).shape)
