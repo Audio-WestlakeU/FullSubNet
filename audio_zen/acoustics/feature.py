@@ -31,7 +31,12 @@ def stft(y, n_fft, hop_length, win_length):
         y = y.reshape(-1, num_samples)  # [B * C ,T]
 
     complex_stft = torch.stft(
-        y, n_fft, hop_length, win_length, window=torch.hann_window(n_fft, device=y.device), return_complex=True
+        y,
+        n_fft,
+        hop_length,
+        win_length,
+        window=torch.hann_window(n_fft, device=y.device),
+        return_complex=True,
     )
     _, num_freqs, num_frames = complex_stft.shape
 
@@ -72,10 +77,17 @@ def istft(features, n_fft, hop_length, win_length, length=None, input_type="comp
         mag, phase = features
         features = torch.complex(mag * torch.cos(phase), mag * torch.sin(phase))
     else:
-        raise NotImplementedError("Only 'real_imag', 'complex', and 'mag_phase' are supported")
+        raise NotImplementedError(
+            "Only 'real_imag', 'complex', and 'mag_phase' are supported"
+        )
 
     return torch.istft(
-        features, n_fft, hop_length, win_length, window=torch.hann_window(n_fft, device=features.device), length=length
+        features,
+        n_fft,
+        hop_length,
+        win_length,
+        window=torch.hann_window(n_fft, device=features.device),
+        length=length,
     )
 
 
@@ -137,7 +149,9 @@ def aligned_subsample(data_a, data_b, sub_sample_length):
         return data_a, data_b
 
 
-def subsample(data, sub_sample_length, start_position: int = -1, return_start_position=False):
+def subsample(
+    data, sub_sample_length, start_position: int = -1, return_start_position=False
+):
     """Randomly select fixed-length data from.
 
     Args:
@@ -223,9 +237,13 @@ def activity_detector(audio, fs=16000, activity_threshold=0.13, target_level=-25
         frame_energy_prob = 1.0 / (1 + np.exp(-(a + b * frame_rms)))
 
         if frame_energy_prob > prev_energy_prob:
-            smoothed_energy_prob = frame_energy_prob * alpha_att + prev_energy_prob * (1 - alpha_att)
+            smoothed_energy_prob = frame_energy_prob * alpha_att + prev_energy_prob * (
+                1 - alpha_att
+            )
         else:
-            smoothed_energy_prob = frame_energy_prob * alpha_rel + prev_energy_prob * (1 - alpha_rel)
+            smoothed_energy_prob = frame_energy_prob * alpha_rel + prev_energy_prob * (
+                1 - alpha_rel
+            )
 
         if smoothed_energy_prob > activity_threshold:
             active_frames += 1
@@ -278,7 +296,10 @@ def batch_shuffle_frequency(tensor, indices=None):
     batch_size, num_channels, num_freqs, num_frames = tensor.shape
 
     if not torch.is_tensor(indices):
-        indices = torch.stack([torch.randperm(num_freqs, device=tensor.device) for _ in range(batch_size)], dim=0)
+        indices = torch.stack(
+            [torch.randperm(num_freqs, device=tensor.device) for _ in range(batch_size)],
+            dim=0,
+        )
         indices = indices[:, None, :, None].repeat(1, num_channels, 1, num_frames)
 
     out = torch.gather(tensor, dim=2, index=indices)
@@ -309,11 +330,15 @@ def drop_band(input, num_groups=2):
 
     output = []
     for group_idx in range(num_groups):
-        samples_indices = torch.arange(group_idx, batch_size, num_groups, device=input.device)
+        samples_indices = torch.arange(
+            group_idx, batch_size, num_groups, device=input.device
+        )
         freqs_indices = torch.arange(group_idx, num_freqs, num_groups, device=input.device)
 
         selected_samples = torch.index_select(input, dim=0, index=samples_indices)
-        selected = torch.index_select(selected_samples, dim=2, index=freqs_indices)  # [B, C, F // num_groups, T]
+        selected = torch.index_select(
+            selected_samples, dim=2, index=freqs_indices
+        )  # [B, C, F // num_groups, T]
 
         output.append(selected)
 
@@ -369,8 +394,3 @@ def bark_filter_bank(num_filters, n_fft, sr, low_freq, high_freq):
         for i in range(int(bin[j + 1]), int(bin[j + 2])):
             fbank[j, i] = (bin[j + 2] - i) / (bin[j + 2] - bin[j + 1])
     return fbank
-
-
-if __name__ == "__main__":
-    fband = bark_filter_bank(56, 512, 16000, 100, 8000)
-    print(fband.shape)
