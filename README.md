@@ -11,7 +11,7 @@
         <img src='https://readthedocs.org/projects/fullsubnet/badge/?version=latest' alt='Documentation Status' />
     </a>
     <a href="https://github.com/haoxiangsnr/FullSubNet/"><img src="https://img.shields.io/badge/Python-3.10-orange" alt="version"></a>
-    <a href="https://github.com/haoxiangsnr/FullSubNet/"><img src="https://img.shields.io/badge/PyTorch-1.11-brightgreen" alt="python"></a>
+    <a href="https://github.com/haoxiangsnr/FullSubNet/"><img src="https://img.shields.io/badge/PyTorch-1.12-brightgreen" alt="python"></a>
     <a href="https://github.com/haoxiangsnr/FullSubNet/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="mit"></a>
 </div>
 
