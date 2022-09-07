@@ -189,7 +189,7 @@ class BaseTrainer:
 
         if self.rank == 0:
             print(
-                f"Model checkpoint loaded. Training will begin at {self.start_epoch} epoch."
+                f"Model checkpoint is loaded. Training will begin at epoch {self.start_epoch}."
             )
 
     def _save_checkpoint(self, epoch, is_best_epoch=False):
@@ -324,8 +324,7 @@ class BaseTrainer:
         num_workers=10,
         mark="",
     ):
-        """
-        Get metrics on validation dataset by paralleling.
+        """Get metrics on validation dataset by paralleling.
 
         Notes:
             1. You can register other metrics, but STOI and WB_PESQ metrics must be existence. These two metrics are
@@ -407,7 +406,7 @@ class BaseTrainer:
             # Regular validation
             if self.rank == 0 and (epoch % self.validation_interval == 0):
                 print(
-                    f"[{timer.duration()} seconds] Training has finished, validation is in progress..."
+                    f"[{timer.duration()} seconds] Training is finished, and validation is in progress..."
                 )
 
                 self._set_models_to_eval_mode()

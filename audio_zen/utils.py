@@ -31,8 +31,7 @@ def load_checkpoint(checkpoint_path, device):
 
 
 def prepare_empty_dir(dirs, resume=False):
-    """
-    if resume the experiment, assert the dirs exist. If not the resume experiment, set up new dirs.
+    """If resume the experiment, assert the dirs exist. If not the resume experiment, set up new dirs.
 
     Args:
         dirs (list): directors list
@@ -53,8 +52,7 @@ def check_nan(tensor, key=""):
 
 
 class ExecutionTime:
-    """
-    Count execution time.
+    """Count execution time.
 
     Examples:
         timer = ExecutionTime()
@@ -120,7 +118,8 @@ def print_tensor_info(tensor, flag="Tensor"):
 
 
 def set_requires_grad(nets, requires_grad=False):
-    """
+    """Set "requies_grad=Fasle" for all the networks to avoid unnecessary computations.
+
     Args:
         nets: list of networks
         requires_grad
@@ -134,8 +133,7 @@ def set_requires_grad(nets, requires_grad=False):
 
 
 def prepare_device(n_gpu: int, keep_reproducibility=False):
-    """
-    Choose to use CPU or GPU depend on the value of "n_gpu".
+    """Choose to use CPU or GPU depend on the value of "n_gpu".
 
     Args:
         n_gpu(int): the number of GPUs used in the experiment. if n_gpu == 0, use CPU; if n_gpu >= 1, use GPU.

@@ -8,11 +8,13 @@ from audio_zen.utils import basename
 
 
 class Dataset(BaseDataset):
-    def __init__(self,
-                 dataset_dir_list,
-                 sr,
-                 ):
-        """
+    def __init__(
+        self,
+        dataset_dir_list,
+        sr,
+    ):
+        """Inference dataset, which only contains noisy files.
+
         Args:
             noisy_dataset_dir_list (str or list): noisy dir or noisy dir list
         """
@@ -23,7 +25,9 @@ class Dataset(BaseDataset):
         noisy_file_path_list = []
         for dataset_dir in dataset_dir_list:
             dataset_dir = Path(dataset_dir).expanduser().absolute()
-            noisy_file_path_list += librosa.util.find_files(dataset_dir.as_posix())  # Sorted
+            noisy_file_path_list += librosa.util.find_files(
+                dataset_dir.as_posix()
+            )  # Sorted
 
         self.noisy_file_path_list = noisy_file_path_list
         self.length = len(self.noisy_file_path_list)

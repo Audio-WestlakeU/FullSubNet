@@ -42,12 +42,21 @@ class BaseInferencer:
         self.sr = self.acoustic_config["sr"]
 
         # See utils_backup.py
-        self.torch_stft = partial(stft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length)
-        self.torch_istft = partial(istft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length)
-        self.librosa_stft = partial(
-            librosa.stft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length
+        self.torch_stft = partial(
+            stft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length
         )
-        self.librosa_istft = partial(librosa.istft, hop_length=self.hop_length, win_length=self.win_length)
+        self.torch_istft = partial(
+            istft, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length
+        )
+        self.librosa_stft = partial(
+            librosa.stft,
+            n_fft=self.n_fft,
+            hop_length=self.hop_length,
+            win_length=self.win_length,
+        )
+        self.librosa_istft = partial(
+            librosa.istft, hop_length=self.hop_length, win_length=self.win_length
+        )
 
         print("Configurations are as follows: ")
         print(toml.dumps(config))
@@ -59,7 +68,9 @@ class BaseInferencer:
 
     @staticmethod
     def _load_dataloader(dataset_config):
-        dataset = initialize_module(dataset_config["path"], args=dataset_config["args"], initialize=True)
+        dataset = initialize_module(
+            dataset_config["path"], args=dataset_config["args"], initialize=True
+        )
         dataloader = DataLoader(
             dataset=dataset,
             batch_size=1,
@@ -85,11 +96,15 @@ class BaseInferencer:
 
         output = functional.pad(output, [0, 0, n_neighbor, n_neighbor], mode=pad_mode)
         output = functional.unfold(output, (sub_band_n_freqs, n_frames))
-        assert output.shape[-1] == n_freqs, f"n_freqs != N (sub_band), {n_freqs} != {output.shape[-1]}"
+        assert (
+            output.shape[-1] == n_freqs
+        ), f"n_freqs != N (sub_band), {n_freqs} != {output.shape[-1]}"
 
         # Split the middle dimensions of the unfolded features
         output = output.reshape(batch_size, n_channels, sub_band_n_freqs, n_frames, n_freqs)
-        output = output.permute(0, 4, 1, 2, 3).contiguous()  # permute 本质上与  reshape 可是不同的 ...，得到的维度相同，但 entity 不同啊
+        output = output.permute(
+            0, 4, 1, 2, 3
+        ).contiguous()  # permute 本质上与  reshape 可是不同的 ...，得到的维度相同，但 entity 不同啊
         return output
 
     @staticmethod
@@ -104,7 +119,9 @@ class BaseInferencer:
         Returns:
             [B, N, C, F_s, T], F 为子频带的频率轴大小, e.g. [2, 161, 1, 19, 200]
         """
-        assert input.dim() == 4, f"The dims of input is {input.dim()}. It should be four-dim."
+        assert (
+            input.dim() == 4
+        ), f"The dims of input is {input.dim()}. It should be four-dim."
         batch_size, num_channels, num_freqs, num_frames = input.size()
 
         # (i - N,..., i - 1, i)
@@ -126,13 +143,17 @@ class BaseInferencer:
 
     @staticmethod
     def _load_model(model_config, checkpoint_path, device):
-        model = initialize_module(model_config["path"], args=model_config["args"], initialize=True)
+        model = initialize_module(
+            model_config["path"], args=model_config["args"], initialize=True
+        )
         model_checkpoint = torch.load(checkpoint_path, map_location="cpu")
         model_static_dict = model_checkpoint["model"]
         epoch = model_checkpoint["epoch"]
         print(f"Loading model checkpoint (epoch == {epoch})...")
 
-        model_static_dict = {key.replace("module.", ""): value for key, value in model_static_dict.items()}
+        model_static_dict = {
+            key.replace("module.", ""): value for key, value in model_static_dict.items()
+        }
 
         model.load_state_dict(model_static_dict)
         model.to(device)
@@ -140,31 +161,11 @@ class BaseInferencer:
         return model, model_checkpoint["epoch"]
 
     @torch.no_grad()
-    def multi_channel_mag_to_mag(self, noisy, inference_args=None):
-        """
-        模型的输入为带噪语音的 **幅度谱**，输出同样为 **幅度谱**
-        """
-        mixture_stft_coefficients = self.torch_stft(noisy)
-        mixture_mag = (mixture_stft_coefficients.real**2 + mixture_stft_coefficients.imag**2) ** 0.5
-
-        enhanced_mag = self.model(mixture_mag)
-
-        # Phase of the reference channel
-        reference_channel_stft_coefficients = mixture_stft_coefficients[:, 0, ...]
-        noisy_phase = torch.atan2(reference_channel_stft_coefficients.imag, reference_channel_stft_coefficients.real)
-        complex_tensor = torch.stack(
-            [(enhanced_mag * torch.cos(noisy_phase)), (enhanced_mag * torch.sin(noisy_phase))], dim=-1
-        )
-        enhanced = self.torch_istft(complex_tensor, length=noisy.shape[-1])
-
-        enhanced = enhanced.detach().squeeze(0).cpu().numpy()
-
-        return enhanced
-
-    @torch.no_grad()
     def __call__(self):
         inference_type = self.inference_config["type"]
-        assert inference_type in dir(self), f"Not implemented Inferencer type: {inference_type}"
+        assert inference_type in dir(
+            self
+        ), f"Not implemented Inferencer type: {inference_type}"
 
         inference_args = self.inference_config["args"]
 
@@ -179,13 +180,19 @@ class BaseInferencer:
 
             amp = np.iinfo(np.int16).max
             enhanced = np.int16(0.8 * amp * enhanced / np.max(np.abs(enhanced)))
-            sf.write(self.enhanced_dir / f"{name}.wav", enhanced, samplerate=self.acoustic_config["sr"])
+            sf.write(
+                self.enhanced_dir / f"{name}.wav",
+                enhanced,
+                samplerate=self.acoustic_config["sr"],
+            )
 
             noisy = noisy.detach().squeeze(0).numpy()
             if np.ndim(noisy) > 1:
                 noisy = noisy[0, :]  # first channel
             noisy = noisy[: enhanced.shape[-1]]
-            sf.write(self.noisy_dir / f"{name}.wav", noisy, samplerate=self.acoustic_config["sr"])
+            sf.write(
+                self.noisy_dir / f"{name}.wav", noisy, samplerate=self.acoustic_config["sr"]
+            )
 
 
 if __name__ == "__main__":

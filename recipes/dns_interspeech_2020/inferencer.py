@@ -26,12 +26,18 @@ def cumulative_norm(input):
     cumulative_sum = torch.cumsum(step_sum, dim=-1)  # [B, T]
     cumulative_pow_sum = torch.cumsum(step_pow_sum, dim=-1)  # [B, T]
 
-    entry_count = torch.arange(n_freqs, n_freqs * n_frames + 1, n_freqs, dtype=data_type, device=device)
+    entry_count = torch.arange(
+        n_freqs, n_freqs * n_frames + 1, n_freqs, dtype=data_type, device=device
+    )
     entry_count = entry_count.reshape(1, n_frames)  # [1, T]
     entry_count = entry_count.expand_as(cumulative_sum)  # [1, T] => [B, T]
 
     cum_mean = cumulative_sum / entry_count  # B, T
-    cum_var = (cumulative_pow_sum - 2 * cum_mean * cumulative_sum) / entry_count + cum_mean.pow(2)  # B, T
+    cum_var = (
+        cumulative_pow_sum - 2 * cum_mean * cumulative_sum
+    ) / entry_count + cum_mean.pow(
+        2
+    )  # B, T
     cum_std = (cum_var + eps).sqrt()  # B, T
 
     cum_mean = cum_mean.reshape(batch_size * n_channels, 1, n_frames)
@@ -56,7 +62,9 @@ class Inferencer(BaseInferencer):
 
         enhanced_mag = self.model(noisy_mag.unsqueeze(1)).squeeze(1)
 
-        enhanced = self.torch_istft((enhanced_mag, noisy_phase), length=noisy.size(-1), use_mag_phase=True)
+        enhanced = self.torch_istft(
+            (enhanced_mag, noisy_phase), length=noisy.size(-1), input_type="mag_phase"
+        )
         enhanced = enhanced.detach().squeeze(0).cpu().numpy()
 
         return enhanced
@@ -72,7 +80,7 @@ class Inferencer(BaseInferencer):
         scaled_mask = scaled_mask.permute(0, 2, 3, 1)
 
         enhanced_complex = noisy_complex * scaled_mask
-        enhanced = self.torch_istft(enhanced_complex, length=noisy.size(-1), use_mag_phase=False)
+        enhanced = self.torch_istft(enhanced_complex, length=noisy.size(-1))
         enhanced = enhanced.detach().squeeze(0).cpu().numpy()
 
         return enhanced
@@ -87,18 +95,28 @@ class Inferencer(BaseInferencer):
 
         noisy_real = torch.tensor(noisy_D.real, device=self.device)
         noisy_imag = torch.tensor(noisy_D.imag, device=self.device)
-        noisy_mag = torch.sqrt(torch.square(noisy_real) + torch.square(noisy_imag))  # [F, T]
+        noisy_mag = torch.sqrt(
+            torch.square(noisy_real) + torch.square(noisy_imag)
+        )  # [F, T]
         n_freqs, n_frames = noisy_mag.size()
 
         noisy_mag = noisy_mag.reshape(1, 1, n_freqs, n_frames)
-        noisy_mag_padded = self._unfold(noisy_mag, pad_mode, n_neighbor)  # [B, N, C, F_s, T] <=> [1, 257, 1, 31, T]
-        noisy_mag_padded = noisy_mag_padded.squeeze(0).squeeze(1)  # [257, 31, 200] <=> [B, F_s, T]
+        noisy_mag_padded = self._unfold(
+            noisy_mag, pad_mode, n_neighbor
+        )  # [B, N, C, F_s, T] <=> [1, 257, 1, 31, T]
+        noisy_mag_padded = noisy_mag_padded.squeeze(0).squeeze(
+            1
+        )  # [257, 31, 200] <=> [B, F_s, T]
 
         pred_crm = self.model(noisy_mag_padded).detach()  # [B, 2, T] <=> [F, 2, T]
         pred_crm = pred_crm.permute(0, 2, 1).contiguous()  # [B, T, 2]
 
         lim = 9.99
-        pred_crm = lim * (pred_crm >= lim) - lim * (pred_crm <= -lim) + pred_crm * (torch.abs(pred_crm) < lim)
+        pred_crm = (
+            lim * (pred_crm >= lim)
+            - lim * (pred_crm <= -lim)
+            + pred_crm * (torch.abs(pred_crm) < lim)
+        )
         pred_crm = -10 * torch.log((10 - pred_crm) / (10 + pred_crm))
 
         enhanced_real = pred_crm[:, :, 0] * noisy_real - pred_crm[:, :, 1] * noisy_imag
@@ -111,7 +129,7 @@ class Inferencer(BaseInferencer):
 
     @torch.no_grad()
     def full_band_crm_mask(self, noisy, inference_args):
-        noisy_mag, noisy_phase, noisy_real, noisy_imag = self.torch_stft(noisy)
+        noisy_mag, _, noisy_real, noisy_imag = self.torch_stft(noisy)
 
         noisy_mag = noisy_mag.unsqueeze(1)
         pred_crm = self.model(noisy_mag)
@@ -120,7 +138,9 @@ class Inferencer(BaseInferencer):
         pred_crm = decompress_cIRM(pred_crm)
         enhanced_real = pred_crm[..., 0] * noisy_real - pred_crm[..., 1] * noisy_imag
         enhanced_imag = pred_crm[..., 1] * noisy_real + pred_crm[..., 0] * noisy_imag
-        enhanced = self.torch_istft((enhanced_real, enhanced_imag), length=noisy.size(-1), input_type="real_imag")
+        enhanced = self.torch_istft(
+            (enhanced_real, enhanced_imag), length=noisy.size(-1), input_type="real_imag"
+        )
         enhanced = enhanced.detach().squeeze(0).cpu().numpy()
         return enhanced
 
@@ -137,7 +157,7 @@ class Inferencer(BaseInferencer):
 
         prev = None
         enhanced = None
-        # 模拟语音的静音段，防止一上来就给语音，处理的不好
+        # Mock the silent segment of speech to prevent the speech from being processed at the beginning
         for chunk_idx in range(num_chunks):
             if chunk_idx == 0:
                 pad = torch.zeros((num_mics, 256), device=noisy.device)
@@ -146,7 +166,9 @@ class Inferencer(BaseInferencer):
                 chunk_end_position = chunk_start_position + chunk_length
 
                 # concat([(8, 256), (..., ... + chunk_length)])
-                noisy_chunk = torch.cat((pad, noisy[:, chunk_start_position:chunk_end_position]), dim=1)
+                noisy_chunk = torch.cat(
+                    (pad, noisy[:, chunk_start_position:chunk_end_position]), dim=1
+                )
                 enhanced_chunk = self.model(noisy_chunk.unsqueeze(0))
                 enhanced_chunk = torch.squeeze(enhanced_chunk)
                 enhanced_chunk = enhanced_chunk[256:]
@@ -158,17 +180,20 @@ class Inferencer(BaseInferencer):
                 prev = enhanced_chunk[chunk_length // 2 :] * win[chunk_length // 2 :]
             else:
                 # use the previous noisy data as the pad
-                pad = noisy[:, (chunk_idx * chunk_hop_length - 256) : (chunk_idx * chunk_hop_length)]
+                pad = noisy[
+                    :, (chunk_idx * chunk_hop_length - 256) : (chunk_idx * chunk_hop_length)
+                ]
 
                 chunk_start_position = chunk_idx * chunk_hop_length
                 chunk_end_position = chunk_start_position + chunk_length
 
-                noisy_chunk = torch.cat((pad, noisy[:8, chunk_start_position:chunk_end_position]), dim=1)
+                noisy_chunk = torch.cat(
+                    (pad, noisy[:8, chunk_start_position:chunk_end_position]), dim=1
+                )
                 enhanced_chunk = self.model(noisy_chunk.unsqueeze(0))
                 enhanced_chunk = torch.squeeze(enhanced_chunk)
                 enhanced_chunk = enhanced_chunk[256:]
 
-                # 使用这个窗函数来对拼接的位置进行平滑？
                 enhanced_chunk = enhanced_chunk * win[: len(enhanced_chunk)]
 
                 tmp = enhanced_chunk[: chunk_length // 2]

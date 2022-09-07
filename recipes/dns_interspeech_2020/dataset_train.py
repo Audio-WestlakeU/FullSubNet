@@ -88,7 +88,7 @@ class Dataset(BaseDataset):
         snr_list = self._parse_snr_range(snr_range)
         self.snr_list = snr_list
 
-        assert 0 <= reverb_proportion <= 1, "reverberation proportion should be in [0, 1]"
+        assert 0 <= reverb_proportion <= 1, "The 'reverb_proportion' should be in [0, 1]."
         self.reverb_proportion = reverb_proportion
         self.silence_length = silence_length
         self.target_dB_FS = target_dB_FS
@@ -135,9 +135,15 @@ class Dataset(BaseDataset):
 
     @staticmethod
     def snr_mix(
-        clean_y, noise_y, snr, target_dB_FS, target_dB_FS_floating_value, rir=None, eps=1e-6
+        clean_y,
+        noise_y,
+        snr,
+        target_dB_FS,
+        target_dB_FS_floating_value,
+        rir=None,
+        eps=1e-6,
     ):
-        """Mixing clean_y and noise_y with snr and rir (if exist).
+        """Mix clean_y and noise_y based on a given SNR and a RIR (if exist).
 
         Args:
             clean_y: clean signal
@@ -182,21 +188,21 @@ class Dataset(BaseDataset):
 
         # The mixed speech is clipped if the RMS value of noisy speech is too large.
         if is_clipped(noisy_y):
-            noisy_y_scalar = np.max(np.abs(noisy_y)) / (0.99 - eps)  # 相当于除以 1
+            noisy_y_scalar = np.max(np.abs(noisy_y)) / (0.99 - eps)
             noisy_y = noisy_y / noisy_y_scalar
             clean_y = clean_y / noisy_y_scalar
 
         return noisy_y, clean_y
 
     def __getitem__(self, item):
-        clean_file = self.clean_dataset_list[item]
-        clean_y = load_wav(clean_file, sr=self.sr)
+        clean_fpath = self.clean_dataset_list[item]
+        clean_y = load_wav(clean_fpath, sr=self.sr)
         clean_y = subsample(
             clean_y, sub_sample_length=int(self.sub_sample_length * self.sr)
         )
 
         noise_y = self._select_noise_y(target_length=len(clean_y))
-        assert len(clean_y) == len(noise_y), f"Inequality: {len(clean_y)} {len(noise_y)}"
+        assert len(clean_y) == len(noise_y), f"Inequality: {len(clean_y)=} {len(noise_y)=}"
 
         snr = self._random_select_from(self.snr_list)
         use_reverb = bool(np.random.random(1) < self.reverb_proportion)
@@ -212,7 +218,7 @@ class Dataset(BaseDataset):
             else None,
         )
 
-        noisy_y = clean_y.astype(np.float32)
+        noisy_y = noisy_y.astype(np.float32)
         clean_y = clean_y.astype(np.float32)
 
         return noisy_y, clean_y

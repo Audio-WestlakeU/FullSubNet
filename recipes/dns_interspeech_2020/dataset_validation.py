@@ -3,16 +3,16 @@ from pathlib import Path
 
 import librosa
 
-from audio_zen.dataset.base_dataset import BaseDataset
 from audio_zen.acoustics.feature import load_wav
+from audio_zen.dataset.base_dataset import BaseDataset
 from audio_zen.utils import basename
 
 
 class Dataset(BaseDataset):
     def __init__(
-            self,
-            dataset_dir_list,
-            sr,
+        self,
+        dataset_dir_list,
+        sr,
     ):
         """
         Construct DNS validation set
@@ -56,7 +56,6 @@ class Dataset(BaseDataset):
 
         reverb_remark = ""  # When the speech comes from reverb_dir, insert "with_reverb" before the filename
 
-        # speech_type 与 validation 部分要一致，用于区分后续的可视化
         if parent_dir == "with_reverb":
             speech_type = "With_reverb"
         elif parent_dir == "no_reverb":
@@ -84,7 +83,9 @@ class Dataset(BaseDataset):
                 reverb_remark = "with_reverb"
             clean_filename = f"clean_fileid_{file_id}"
 
-        clean_file_path = noisy_file_path.replace(f"noisy/{noisy_filename}", f"clean/{clean_filename}")
+        clean_file_path = noisy_file_path.replace(
+            f"noisy/{noisy_filename}", f"clean/{clean_filename}"
+        )
 
         noisy = load_wav(os.path.abspath(os.path.expanduser(noisy_file_path)), sr=self.sr)
         clean = load_wav(os.path.abspath(os.path.expanduser(clean_file_path)), sr=self.sr)
