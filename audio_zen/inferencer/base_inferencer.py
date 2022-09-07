@@ -55,7 +55,9 @@ class BaseInferencer:
             win_length=self.win_length,
         )
         self.librosa_istft = partial(
-            librosa.istft, hop_length=self.hop_length, win_length=self.win_length
+            librosa.istft,
+            hop_length=self.hop_length,
+            win_length=self.win_length,
         )
 
         print("Configurations are as follows: ")

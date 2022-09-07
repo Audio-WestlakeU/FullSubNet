@@ -70,7 +70,7 @@ def istft(features, n_fft, hop_length, win_length, length=None, input_type="comp
         real, imag = features
         features = torch.complex(real, imag)
     elif input_type == "complex":
-        assert isinstance(features, torch.ComplexType)
+        assert torch.is_complex(features), "The input feature is not complex."
     elif input_type == "mag_phase":
         # the feature is (mag, phase) or [mag, phase]
         assert isinstance(features, tuple) or isinstance(features, list)
@@ -78,7 +78,7 @@ def istft(features, n_fft, hop_length, win_length, length=None, input_type="comp
         features = torch.complex(mag * torch.cos(phase), mag * torch.sin(phase))
     else:
         raise NotImplementedError(
-            "Only 'real_imag', 'complex', and 'mag_phase' are supported"
+            "Only 'real_imag', 'complex', and 'mag_phase' are supported."
         )
 
     return torch.istft(
