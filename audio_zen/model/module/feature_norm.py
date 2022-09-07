@@ -18,12 +18,18 @@ def cumulative_norm(input):
     cumulative_sum = torch.cumsum(step_sum, dim=-1)  # [B, T]
     cumulative_pow_sum = torch.cumsum(step_pow_sum, dim=-1)  # [B, T]
 
-    entry_count = torch.arange(n_freqs, n_freqs * n_frames + 1, n_freqs, dtype=data_type, device=device)
+    entry_count = torch.arange(
+        n_freqs, n_freqs * n_frames + 1, n_freqs, dtype=data_type, device=device
+    )
     entry_count = entry_count.reshape(1, n_frames)  # [1, T]
     entry_count = entry_count.expand_as(cumulative_sum)  # [1, T] => [B, T]
 
     cum_mean = cumulative_sum / entry_count  # B, T
-    cum_var = (cumulative_pow_sum - 2 * cum_mean * cumulative_sum) / entry_count + cum_mean.pow(2)  # B, T
+    cum_var = (
+        cumulative_pow_sum - 2 * cum_mean * cumulative_sum
+    ) / entry_count + cum_mean.pow(
+        2
+    )  # B, T
     cum_std = (cum_var + eps).sqrt()  # B, T
 
     cum_mean = cum_mean.reshape(batch_size * n_channels, 1, n_frames)
@@ -37,14 +43,14 @@ def cumulative_norm(input):
 
 class CumulativeMagSpectralNorm(nn.Module):
     def __init__(self, cumulative=False, use_mid_freq_mu=False):
-        """
+        """Cumulative magnitude spectral normalization.
 
         Args:
-            cumulative: 是否采用累积的方式计算 mu
-            use_mid_freq_mu: 仅采用中心频率的 mu 来代替全局 mu
+            cumulative: whether to use cumulative mean and std.
+            use_mid_freq_mu: only use the middle frequency mu to replace the global mu.
 
         Notes:
-            先算均值再累加 等同于 先累加再算均值
+            Calculate the mean first and then accumulate is equivalent to accumulating and then calculating the mean.
 
         """
         super().__init__()
@@ -82,7 +88,7 @@ class CumulativeMagSpectralNorm(nn.Module):
         return input_normed
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     a = torch.rand(2, 1, 160, 200)
     ln = CumulativeMagSpectralNorm(cumulative=False, use_mid_freq_mu=False)
     ln_1 = CumulativeMagSpectralNorm(cumulative=True, use_mid_freq_mu=False)

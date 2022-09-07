@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 
-
 # class CustomSRU(nn.Module):
 #     def __init__(self, *args, **kwargs):
 #         super().__init__()
@@ -26,26 +25,26 @@ import torch.nn as nn
 
 class SequenceModel(nn.Module):
     def __init__(
-            self,
-            input_size,
-            output_size,
-            hidden_size,
-            num_layers,
-            bidirectional,
-            sequence_model="GRU",
-            output_activate_function="Tanh"
+        self,
+        input_size,
+        output_size,
+        hidden_size,
+        num_layers,
+        bidirectional,
+        sequence_model="GRU",
+        output_activate_function="Tanh",
     ):
         """
         Wrapper of conventional sequence models (LSTM or GRU)
 
         Args:
-            input_size: 每帧输入特征大小
+            input_size: input size.
             output_size: when projection_size> 0, the linear layer is used for projection. Otherwise, no linear layer.
-            hidden_size: 序列模型隐层单元数量
-            num_layers:  层数
-            bidirectional: 是否为双向
-            sequence_model: LSTM | GRU
-            output_activate_function: Tanh | ReLU
+            hidden_size: hidden size.
+            num_layers:  number of layers.
+            bidirectional: whether to use bidirectional RNN.
+            sequence_model: LSTM | GRU.
+            output_activate_function: Tanh | ReLU | ReLU6 | LeakyReLU | PReLU | None.
         """
         super().__init__()
         # Sequence layer
@@ -97,7 +96,9 @@ class SequenceModel(nn.Module):
             elif output_activate_function == "PReLU":
                 self.activate_function = nn.PReLU()
             else:
-                raise NotImplementedError(f"Not implemented activation function {self.activate_function}")
+                raise NotImplementedError(
+                    f"Not implemented activation function {self.activate_function}"
+                )
 
         self.output_activate_function = output_activate_function
         self.output_size = output_size
@@ -112,8 +113,6 @@ class SequenceModel(nn.Module):
         assert x.dim() == 3, f"The shape of input is {x.shape}."
         self.sequence_model.flatten_parameters()
 
-        # contiguous 使元素在内存中连续，有利于模型优化，但分配了新的空间
-        # 建议在网络开始大量计算前使用一下
         x = x.permute(0, 2, 1)  # [B, F, T] => [B, T, F]
         o, _ = self.sequence_model(x)
 
@@ -137,10 +136,12 @@ def _print_networks(nets: list):
         print(f"\tNetwork {i}: {params_of_network / 1e6} million.")
         params_of_all_networks += params_of_network
 
-    print(f"The amount of parameters in the project is {params_of_all_networks / 1e6} million.")
+    print(
+        f"The amount of parameters in the project is {params_of_all_networks / 1e6} million."
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import datetime
 
     with torch.no_grad():
@@ -151,11 +152,11 @@ if __name__ == '__main__':
             hidden_size=512,
             bidirectional=False,
             num_layers=3,
-            sequence_model="LSTM"
+            sequence_model="LSTM",
         )
 
         start = datetime.datetime.now()
         opt = model(ipt)
         end = datetime.datetime.now()
         print(f"{end - start}")
-        _print_networks([model, ])
+        _print_networks([model])

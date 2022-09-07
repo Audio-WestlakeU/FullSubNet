@@ -37,7 +37,6 @@ class BaseTrainer:
         self.dist = dist
         self.rank = rank
 
-        # 可能由于 K80，或者 cuda 的问题吧
         torch.backends.cudnn.enabled = config["meta"]["cudnn_enable"]
         # torch.backends.cudnn.deterministic = True
         # torch.backends.cudnn.benchmark = False

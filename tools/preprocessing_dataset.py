@@ -17,13 +17,17 @@ candidate_datasets = [
 ]
 dataset_limit = None
 dataset_offset = 0
-dist_file = Path("~/Datasets/DNS-Challenge-ICASSP/datasets/german_3s_0.6_30hrs.txt").expanduser().absolute()
+dist_file = (
+    Path("~/Datasets/DNS-Challenge-ICASSP/datasets/german_3s_0.6_30hrs.txt")
+    .expanduser()
+    .absolute()
+)
 
-# 声学参数
+# Acoustic parameters
 sr = 16000
 wav_min_second = 3
 activity_threshold = 0.6
-total_hrs = 30.0  # 计划收集语音的总时长
+total_hrs = 30.0  # hours of data to use
 
 
 def offset_and_limit(data_list, offset, limit):
@@ -56,7 +60,9 @@ if __name__ == "__main__":
     for wav_file_path in tqdm(all_wav_path_list, desc="Checking"):
         y = load_wav(wav_file_path, sr=sr)
         wav_duration = len(y) / sr
-        wav_file_user_path = wav_file_path.replace(Path(wav_file_path).home().as_posix(), "~")
+        wav_file_user_path = wav_file_path.replace(
+            Path(wav_file_path).home().as_posix(), "~"
+        )
 
         is_clipped_wav = is_clipped(y)
         is_low_activity = activity_detector(y) < activity_threshold
@@ -87,7 +93,9 @@ if __name__ == "__main__":
     print("=" * 70)
     print("Speech Preprocessing")
     print(f"\t Original files: {len(all_wav_path_list)}")
-    print(f"\t Selected files: {accumulated_time / 3600} hrs, {len(output_wav_path_list)} files.")
+    print(
+        f"\t Selected files: {accumulated_time / 3600} hrs, {len(output_wav_path_list)} files."
+    )
     print(f"\t is_clipped_wav: {len(is_clipped_wav_list)}")
     print(f"\t is_low_activity: {len(is_low_activity_list)}")
     print(f"\t is_too_short: {len(is_too_short_list)}")

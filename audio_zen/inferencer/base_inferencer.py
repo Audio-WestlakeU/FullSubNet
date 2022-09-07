@@ -102,9 +102,7 @@ class BaseInferencer:
 
         # Split the middle dimensions of the unfolded features
         output = output.reshape(batch_size, n_channels, sub_band_n_freqs, n_frames, n_freqs)
-        output = output.permute(
-            0, 4, 1, 2, 3
-        ).contiguous()  # permute 本质上与  reshape 可是不同的 ...，得到的维度相同，但 entity 不同啊
+        output = output.permute(0, 4, 1, 2, 3).contiguous()
         return output
 
     @staticmethod
@@ -117,7 +115,7 @@ class BaseInferencer:
             context_size:
 
         Returns:
-            [B, N, C, F_s, T], F 为子频带的频率轴大小, e.g. [2, 161, 1, 19, 200]
+            [B, N, C, F_s, T], e.g. [2, 161, 1, 19, 200]
         """
         assert (
             input.dim() == 4

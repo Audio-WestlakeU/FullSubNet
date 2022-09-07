@@ -71,7 +71,7 @@ class BaseModel(nn.Module):
 
         Notes:
             1. 255 and 256 freq not able to be trained
-            2. batch size 应该被 3 整除，否则最后一部分 batch 内的频率无法很好的训练
+            2. batch size should can be divided by 3, or the last batch will be dropped
 
         Returns:
             [60, 85, 1, 36, 200]
@@ -138,8 +138,6 @@ class BaseModel(nn.Module):
         alpha = (sample_length - 1) / (sample_length + 1)
 
         mu_list = []
-        # TODO bugs
-        # TODO 是否需要修改为包含F的计算方法？
         for frame_idx in range(num_frames):
             if frame_idx < sample_length:
                 alp = torch.min(torch.tensor([(frame_idx - 1) / (frame_idx + 1), alpha]))

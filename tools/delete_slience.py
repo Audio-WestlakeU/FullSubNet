@@ -7,10 +7,20 @@ import soundfile
 from tqdm import tqdm
 
 ###
-noisy_dir = Path("~/Datasets/simulation_array26cm_20210119_shuf100/noisy").expanduser().absolute()
-clean_dir = Path("~/Datasets/simulation_array26cm_20210119_shuf100/clean").expanduser().absolute()
-text_dir = Path("~/Datasets/simulation_array26cm_20210119_shuf100/txt").expanduser().absolute()
-dist_dir = Path("~/Datasets/simulation_array26cm_20210119_shuf100/dist_single").expanduser().absolute()
+noisy_dir = (
+    Path("~/Datasets/simulation_array26cm_20210119_shuf100/noisy").expanduser().absolute()
+)
+clean_dir = (
+    Path("~/Datasets/simulation_array26cm_20210119_shuf100/clean").expanduser().absolute()
+)
+text_dir = (
+    Path("~/Datasets/simulation_array26cm_20210119_shuf100/txt").expanduser().absolute()
+)
+dist_dir = (
+    Path("~/Datasets/simulation_array26cm_20210119_shuf100/dist_single")
+    .expanduser()
+    .absolute()
+)
 (dist_dir / "noisy").mkdir(exist_ok=True, parents=True)
 (dist_dir / "clean").mkdir(exist_ok=True)
 ####
@@ -40,11 +50,20 @@ for noisy_file_path in tqdm(noisy_file_paths):
         name, start_time, end_time = line.split(" ")
         if name != "sil":
             if valid_clean_wav.size == 0:
-                valid_noisy_wav = noisy_wav[:, int(start_time):int(end_time)]
-                valid_clean_wav = clean_wav[int(start_time):int(end_time)]
+                valid_noisy_wav = noisy_wav[:, int(start_time) : int(end_time)]
+                valid_clean_wav = clean_wav[int(start_time) : int(end_time)]
             else:
-                valid_noisy_wav = np.concatenate((valid_noisy_wav, noisy_wav[:, int(start_time):int(end_time)]), axis=-1)
-                valid_clean_wav = np.concatenate((valid_clean_wav, clean_wav[int(start_time):int(end_time)]))
+                valid_noisy_wav = np.concatenate(
+                    (valid_noisy_wav, noisy_wav[:, int(start_time) : int(end_time)]),
+                    axis=-1,
+                )
+                valid_clean_wav = np.concatenate(
+                    (valid_clean_wav, clean_wav[int(start_time) : int(end_time)])
+                )
 
-        soundfile.write((dist_dir / "noisy" / basename).as_posix(), valid_noisy_wav.T, samplerate=16000)
-        soundfile.write((dist_dir / "clean" / basename).as_posix(), valid_clean_wav, samplerate=16000)
+        soundfile.write(
+            (dist_dir / "noisy" / basename).as_posix(), valid_noisy_wav.T, samplerate=16000
+        )
+        soundfile.write(
+            (dist_dir / "clean" / basename).as_posix(), valid_clean_wav, samplerate=16000
+        )

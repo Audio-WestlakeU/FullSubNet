@@ -31,9 +31,7 @@ def main():
     # filter
     tmp = []
     for i, line in enumerate(file_path_list):
-        tmp.append(
-            f"spk1___{i}___utt1___90___0_300	{line}\n"
-        )
+        tmp.append(f"spk1___{i}___utt1___90___0_300	{line}\n")
 
     with open(dist_path.as_posix(), "w") as f:
         f.writelines(tmp)
