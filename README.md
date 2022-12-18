@@ -17,7 +17,8 @@
 
 ## Guides
 
-- 📰 [Paper (PDF)](https://arxiv.org/abs/2010.15508)
+- 📰 [Paper (FullSubNet)](https://arxiv.org/abs/2010.15508)
+- 📰 [Paper (Fast FullSubNet)](https://arxiv.org/abs/2010.15508)
 - 📸 [Demo (Audio Clips)](https://www.haoxiangsnr.com/demo/fullsubnet)
 - 📖 [Documentation](https://fullsubnet.readthedocs.io/)
 - 🎏 [Model Checkpoints](https://github.com/haoxiangsnr/FullSubNet/releases)
@@ -30,12 +31,7 @@ You can use all of these things:
 - Available models
   - [x] Fullband Baseline
   - [x] FullSubNet
-  - [ ] FullSubNet (lightweight)
-  - [ ] Delayed Sub-Band LSTM
-
-- Available datasets
-  - [x] Deep Noise Suppression Challenge - INTERSPEECH 2020
-  - [ ] Demand + CSTR VCTK Corpus
+  - [x] Fast FullSubNet
 
 ## Citation
 
@@ -54,4 +50,4 @@ If you use this code for your research, please consider citeing:
 
 ## License
 
-This respository Under the [MIT license](LICENSE).
+This repository Under the [MIT license](LICENSE).
