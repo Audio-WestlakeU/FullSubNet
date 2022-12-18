@@ -18,8 +18,8 @@ path = "dataset_inference.Dataset"
 
 [dataset.args]
 dataset_dir_list = [
-#        "~/data/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/with_reverb/",
-        "~/data/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/with_reverb/",
+    "~/data/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/no_reverb/noisy",
+    # "~/data/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/with_reverb/noisy",
 ]
 sr = 16000
 
@@ -36,4 +36,3 @@ bottleneck_hidden_size = 384
 bottleneck_num_layers = 2
 noisy_input_num_neighbors = 5
 encoder_output_num_neighbors = 0
-
