@@ -3,7 +3,7 @@
         FullSubNet
     </h1>
     <p>
-    Official PyTorch implementation of <em>FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement</em>, ICASSP 2021.
+    Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement
     </p>
     <a href="https://github.com/haoxiangsnr/FullSubNet/"><img src="https://img.shields.io/badge/Platform-linux-lightgrey" alt="version"></a>
     <a href="https://github.com/haoxiangsnr/FullSubNet/"><img src="https://img.shields.io/github/stars/haoxiangsnr/FullSubNet?color=yellow&amp;label=FullSubNet&amp;logo=github" alt="Generic badge"></a>
@@ -17,21 +17,23 @@
 
 ## Guides
 
-- 📰 [Paper (FullSubNet)](https://arxiv.org/abs/2010.15508)
-- 📰 [Paper (Fast FullSubNet)](https://arxiv.org/abs/2010.15508)
-- 📸 [Demo (Audio Clips)](https://www.haoxiangsnr.com/demo/fullsubnet)
-- 📖 [Documentation](https://fullsubnet.readthedocs.io/)
-- 🎏 [Model Checkpoints](https://github.com/haoxiangsnr/FullSubNet/releases)
-- 📹 [Presentation (YouTube)](https://youtu.be/XJeE-MWDlk0)
+The documentation is hosted on [Read the Docs](https://fullsubnet.readthedocs.io/). See the documentation for **how to train and test the model**.
 
-## Key Features
+- 📰 [FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement](https://arxiv.org/abs/2010.15508)
+  - 📸 [Demo (Audio Clips)](https://www.haoxiangsnr.com/demo/fullsubnet)
+  - 🎏 [Model Checkpoints](https://github.com/haoxiangsnr/FullSubNet/releases)
+  - 📹 [Presentation (YouTube)](https://youtu.be/XJeE-MWDlk0)
+- 📰 [Fast FullSubNet: Accelerate Full-band and Sub-band Fusion Model for Single-channel Speech Enhancement](#)
+  - 📖 [Documentation](https://fullsubnet.readthedocs.io/)
 
-You can use all of these things:
 
-- Available models
-  - [x] Fullband Baseline
-  - [x] FullSubNet
-  - [x] Fast FullSubNet
+## Model architectures
+
+This project currently provides the following architectures:
+
+- [x] Fullband Baseline
+- [x] FullSubNet
+- [x] Fast FullSubNet
 
 ## Citation
 
