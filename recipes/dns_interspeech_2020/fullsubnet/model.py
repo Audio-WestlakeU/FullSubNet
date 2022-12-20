@@ -95,13 +95,13 @@ class Model(BaseModel):
         fb_output = self.fb_model(fb_input).reshape(batch_size, 1, num_freqs, num_frames)
 
         # Unfold fullband model's output, [B, N=F, C, F_f, T]. N is the number of sub-band units
-        fb_output_unfolded = self.unfold(fb_output, num_neighbors=self.fb_num_neighbors)
+        fb_output_unfolded = self.freq_unfold(fb_output, num_neighbors=self.fb_num_neighbors)
         fb_output_unfolded = fb_output_unfolded.reshape(
             batch_size, num_freqs, self.fb_num_neighbors * 2 + 1, num_frames
         )
 
         # Unfold noisy spectrogram, [B, N=F, C, F_s, T]
-        noisy_mag_unfolded = self.unfold(noisy_mag, num_neighbors=self.sb_num_neighbors)
+        noisy_mag_unfolded = self.freq_unfold(noisy_mag, num_neighbors=self.sb_num_neighbors)
         noisy_mag_unfolded = noisy_mag_unfolded.reshape(
             batch_size, num_freqs, self.sb_num_neighbors * 2 + 1, num_frames
         )
@@ -111,7 +111,6 @@ class Model(BaseModel):
         sb_input = self.norm(sb_input)
 
         # Speeding up training without significant performance degradation.
-        # These will be updated to the paper later.
         if batch_size > 1:
             sb_input = drop_band(
                 sb_input.permute(0, 2, 1, 3), num_groups=self.num_groups_in_drop_band

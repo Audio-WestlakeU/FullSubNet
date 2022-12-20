@@ -3,7 +3,7 @@
         FullSubNet
     </h1>
     <p>
-    Official PyTorch implementation of <em>FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement</em>, ICASSP 2021.
+    Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement
     </p>
     <a href="https://github.com/haoxiangsnr/FullSubNet/"><img src="https://img.shields.io/badge/Platform-linux-lightgrey" alt="version"></a>
     <a href="https://github.com/haoxiangsnr/FullSubNet/"><img src="https://img.shields.io/github/stars/haoxiangsnr/FullSubNet?color=yellow&amp;label=FullSubNet&amp;logo=github" alt="Generic badge"></a>
@@ -17,25 +17,19 @@
 
 ## Guides
 
-- 📰 [Paper (PDF)](https://arxiv.org/abs/2010.15508)
-- 📸 [Demo (Audio Clips)](https://www.haoxiangsnr.com/demo/fullsubnet)
-- 📖 [Documentation](https://fullsubnet.readthedocs.io/)
-- 🎏 [Model Checkpoints](https://github.com/haoxiangsnr/FullSubNet/releases)
-- 📹 [Presentation (YouTube)](https://youtu.be/XJeE-MWDlk0)
+The documentation is hosted on [Read the Docs](https://fullsubnet.readthedocs.io/). Check the documentation for **how to train and test models**.
 
-## Key Features
+- 📰 [FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement, ICASSP 2021](https://arxiv.org/abs/2010.15508)
+  - 📸 [Demo (Audio Clips)](https://www.haoxiangsnr.com/demo/fullsubnet)
+  - 🎏 [Model Checkpoints](https://github.com/haoxiangsnr/FullSubNet/releases)
+  - ❇️ [Model Architecture](https://github.com/haoxiangsnr/FullSubNet/blob/fast_fullsubnet/recipes/dns_interspeech_2020/fullsubnet/model.py)
+  - 📹 [Presentation (YouTube)](https://youtu.be/XJeE-MWDlk0)
+- 📰 [Fast FullSubNet: Accelerate Full-band and Sub-band Fusion Model for Single-channel Speech Enhancement](#)
+  - ❇️ [Model Architecture](https://github.com/haoxiangsnr/FullSubNet/blob/fast_fullsubnet/recipes/dns_interspeech_2020/fast_fullsubnet/model.py)
+  - Demo (Audio Clips, coming soon)
+- cIRM-based Fullband baseline model (described in the original FullSubNet paper)
+  - ❇️ [Model Architecture](https://github.com/haoxiangsnr/FullSubNet/blob/fast_fullsubnet/recipes/dns_interspeech_2020/fullband_baseline/model.py)
 
-You can use all of these things:
-
-- Available models
-  - [x] Fullband Baseline
-  - [x] FullSubNet
-  - [ ] FullSubNet (lightweight)
-  - [ ] Delayed Sub-Band LSTM
-
-- Available datasets
-  - [x] Deep Noise Suppression Challenge - INTERSPEECH 2020
-  - [ ] Demand + CSTR VCTK Corpus
 
 ## Citation
 
@@ -54,4 +48,4 @@ If you use this code for your research, please consider citeing:
 
 ## License
 
-This respository Under the [MIT license](LICENSE).
+This repository Under the [MIT license](LICENSE).

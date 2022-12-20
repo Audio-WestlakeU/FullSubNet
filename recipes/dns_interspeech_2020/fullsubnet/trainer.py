@@ -178,4 +178,4 @@ class Trainer(BaseTrainer):
                 mark=speech_type,
             )
 
-        return validation_score_list["No_reverb"]
+        return validation_score_list["With_reverb"]

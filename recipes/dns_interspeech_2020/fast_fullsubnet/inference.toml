@@ -1,0 +1,38 @@
+[acoustics]
+sr = 16000
+n_fft = 512
+win_length = 512
+hop_length = 256
+
+
+[inferencer]
+path = "inferencer.Inferencer"
+type = "full_band_crm_mask"
+
+[inferencer.args]
+n_neighbor = 15
+
+
+[dataset]
+path = "dataset_inference.Dataset"
+
+[dataset.args]
+dataset_dir_list = [
+    "~/data/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/no_reverb/noisy",
+    # "~/data/DNS-Challenge-INTERSPEECH/datasets/test_set/synthetic/with_reverb/noisy",
+]
+sr = 16000
+
+
+[model]
+path = "fast_fullsubnet.model.Model"
+[model.args]
+look_ahead = 2
+shrink_size = 2
+sequence_model = "LSTM"
+encoder_input_size = 257
+num_mels = 64
+bottleneck_hidden_size = 384
+bottleneck_num_layers = 2
+noisy_input_num_neighbors = 5
+encoder_output_num_neighbors = 0

@@ -11,50 +11,36 @@ class BaseModel(nn.Module):
         super(BaseModel, self).__init__()
 
     @staticmethod
-    def unfold(input, num_neighbors):
-        """
-        Along the frequency axis, this function is used for splitting overlapped sub-band units.
+    def freq_unfold(input, num_neighbors):
+        """Split the overlapped subband units along the frequency axis.
 
         Args:
-            input: four-dimension input.
-            num_neighbors: number of neighbors in each side.
+            input: four-dimension input with the shape [B, C, F, T]
+            num_neighbors: number of neighbors in each side for each subband unit.
 
         Returns:
-            Overlapped sub-band units.
-
-        Shapes:
-            input: [B, C, F, T]
-            return: [B, N, C, F_s, T]. F_s represents the frequency axis of the sub-band unit, e.g. [2, 161, 1, 19, 200]
+            Overlapped sub-band units specified as [B, N, C, F_s, T], where `F_s` represents the frequency axis of
+            each sub-band unit and `N` is the number of sub-band unit, e.g., [2, 161, 1, 19, 100].
         """
-        assert (
-            input.dim() == 4
-        ), f"The dim of the input is {input.dim()}. It should be four dim."
+        assert input.dim() == 4, f"The dim of the input is {input.dim()}. It should be four dim."
         batch_size, num_channels, num_freqs, num_frames = input.size()
 
-        if num_neighbors < 1:  # No change on the input
-            return input.permute(0, 2, 1, 3).reshape(
-                batch_size, num_freqs, num_channels, 1, num_frames
-            )
+        if num_neighbors <= 0:  # No change to the input
+            return input.permute(0, 2, 1, 3).reshape(batch_size, num_freqs, num_channels, 1, num_frames)
 
-        output = input.reshape(batch_size * num_channels, 1, num_freqs, num_frames)
+        output = input.reshape(batch_size * num_channels, 1, num_freqs, num_frames)  # [B * C, 1, F, T]
         sub_band_unit_size = num_neighbors * 2 + 1
 
         # Pad the top and bottom of the original spectrogram
-        output = functional.pad(
-            output, [0, 0, num_neighbors, num_neighbors], mode="reflect"
-        )  # [B * C, 1, F, T]
+        output = functional.pad(output, [0, 0, num_neighbors, num_neighbors], mode="reflect")  # [B * C, 1, F, T]
 
-        output = functional.unfold(
-            output, (sub_band_unit_size, num_frames)
-        )  # move on the F and T axes.
-        assert (
-            output.shape[-1] == num_freqs
-        ), f"n_freqs != N (sub_band), {num_freqs} != {output.shape[-1]}"
+        # Unfold the spectrogram into sub-band units
+        # [B * C, 1, F, T] => [B * C, sub_band_unit_size, num_frames, N], N is equal to the number of frequencies.
+        output = functional.unfold(output, kernel_size=(sub_band_unit_size, num_frames))  # move on the F and T axes
+        assert output.shape[-1] == num_freqs, f"n_freqs != N (sub_band), {num_freqs} != {output.shape[-1]}"
 
-        # Split the dim of the unfolded feature
-        output = output.reshape(
-            batch_size, num_channels, sub_band_unit_size, num_frames, num_freqs
-        )
+        # Split the dimension of the unfolded feature
+        output = output.reshape(batch_size, num_channels, sub_band_unit_size, num_frames, num_freqs)
         output = output.permute(0, 4, 1, 2, 3).contiguous()  # [B, N, C, F_s, T]
 
         return output
