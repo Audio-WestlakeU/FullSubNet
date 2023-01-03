@@ -20,13 +20,13 @@
 The documentation is hosted on [Read the Docs](https://fullsubnet.readthedocs.io/). Check the documentation for **how to train and test models**.
 
 - 📰 [FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement, ICASSP 2021](https://arxiv.org/abs/2010.15508)
-  - 📸 [Demo (Audio Clips)](https://www.haoxiangsnr.com/demo/fullsubnet)
+  - 📸 [Demo (Audio Clips)](https://www.haoxiangsnr.com/publications/3)
   - 🎏 [Model Checkpoints](https://github.com/haoxiangsnr/FullSubNet/releases)
   - ❇️ [Model Architecture](https://github.com/haoxiangsnr/FullSubNet/blob/fast_fullsubnet/recipes/dns_interspeech_2020/fullsubnet/model.py)
   - 📹 [Presentation (YouTube)](https://youtu.be/XJeE-MWDlk0)
 - 📰 [Fast FullSubNet: Accelerate Full-band and Sub-band Fusion Model for Single-channel Speech Enhancement](https://arxiv.org/abs/2212.09019)
   - ❇️ [Model Architecture](https://github.com/haoxiangsnr/FullSubNet/blob/fast_fullsubnet/recipes/dns_interspeech_2020/fast_fullsubnet/model.py)
-  - Demo (Audio Clips, coming soon)
+  - 📸 [Demo (Audio Clips)](https://www.haoxiangsnr.com/publications/3)
 - cIRM-based Fullband baseline model (described in the original FullSubNet paper)
   - ❇️ [Model Architecture](https://github.com/haoxiangsnr/FullSubNet/blob/fast_fullsubnet/recipes/dns_interspeech_2020/fullband_baseline/model.py)
 
