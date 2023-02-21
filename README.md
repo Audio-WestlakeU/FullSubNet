@@ -23,7 +23,6 @@ The documentation is hosted on [Read the Docs](https://fullsubnet.readthedocs.io
   - 📸 [Demo (Audio Clips)](https://www.haoxiangsnr.com/publications/3)
   - 🎏 [Model Checkpoints](https://github.com/haoxiangsnr/FullSubNet/releases)
   - ❇️ [Model Architecture](https://github.com/haoxiangsnr/FullSubNet/blob/fast_fullsubnet/recipes/dns_interspeech_2020/fullsubnet/model.py)
-  - 📹 [Presentation (YouTube)](https://youtu.be/XJeE-MWDlk0)
 - 📰 [Fast FullSubNet: Accelerate Full-band and Sub-band Fusion Model for Single-channel Speech Enhancement](https://arxiv.org/abs/2212.09019)
   - ❇️ [Model Architecture](https://github.com/haoxiangsnr/FullSubNet/blob/fast_fullsubnet/recipes/dns_interspeech_2020/fast_fullsubnet/model.py)
   - 📸 [Demo (Audio Clips)](https://www.haoxiangsnr.com/publications/3)

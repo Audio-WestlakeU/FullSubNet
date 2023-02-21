@@ -1,6 +1,5 @@
 import numpy as np
 from pesq import pesq
-from pypesq import pesq as nb_pesq
 from pystoi.stoi import stoi
 
 
@@ -41,7 +40,7 @@ def WB_PESQ(ref, est, sr=16000):
 
 
 def NB_PESQ(ref, est, sr=16000):
-    return nb_pesq(ref, est, sr)
+    return pesq(sr, ref, est, "nb")
 
 
 # Only registered metric can be used.
