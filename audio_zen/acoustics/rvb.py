@@ -38,7 +38,7 @@ def reverberation_time_shortening(
     q = 3 / (target_T60 * sr) - 3 / (original_T60 * sr)
     idx_max = int(np.argmax(np.abs(rir)))
     N1 = int(idx_max + time_after_max * sr)
-    win = np.empty(shape=rir.shape, dtype=np.float64)
+    win = np.empty(shape=rir.shape, dtype=np.float32)
     win[:N1] = 1
     win[N1:] = 10 ** (-q * np.arange(rir.shape[0] - N1))
     rir = rir * win
