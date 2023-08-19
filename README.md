@@ -19,6 +19,8 @@
 
 The documentation is hosted on [Read the Docs](https://fullsubnet.readthedocs.io/). Check the documentation for **how to train and test models**.
 
+- Improved FullSubNet: Further reduces computational costs and enables high sampling rate data processing, e.g., 48 KHz and 24 KHz.
+  - ❇️ [Model Architecture](https://github.com/Audio-WestlakeU/FullSubNet/blob/main/recipes/dns_interspeech_2020/improved_fullsubnet/model.py)
 - 📰 [FullSubNet: A Full-Band and Sub-Band Fusion Model for Real-Time Single-Channel Speech Enhancement, ICASSP 2021](https://arxiv.org/abs/2010.15508)
   - 📸 [Demo (Audio Clips)](https://www.haoxiangsnr.com/publications/3)
   - 🎏 [Model Checkpoints](https://github.com/haoxiangsnr/FullSubNet/releases)
